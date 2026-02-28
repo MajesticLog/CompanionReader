@@ -1,7 +1,24 @@
 /* =========================
    INIT
 ========================= */
-resizeCanvas();
+
 window.addEventListener('resize', resizeCanvas);
-renderBookList();
-clearCanvas(true);
+
+function initApp() {
+  // Canvas + UI
+  resizeCanvas();
+  clearCanvas(true);
+
+  // Books panel
+  renderBookList();
+
+  // Flashcards setup (if user opens tab)
+  // no-op here; nav.js will call showFlashcardsSetup when needed
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}
+
