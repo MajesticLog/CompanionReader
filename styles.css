@@ -1034,3 +1034,9 @@ canvas{
   pointer-events:auto !important;
   touch-action:none !important;
 }
+
+nav, nav button { pointer-events: auto !important; }
+
+.panel{ pointer-events:auto !important; }
+
+#panel-writing canvas{ background:#fff; }

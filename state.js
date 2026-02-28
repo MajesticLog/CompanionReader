@@ -3,6 +3,7 @@
 // =========================
 window.TSUNDOKU_CONFIG = {
   jishoApi: "https://jisho.org/api/v1/search/words?keyword=",
+  workerWordsEndpoint: "https://minireader.zoe-caudron.workers.dev/words",
   handwriteEndpoint: "https://minireader.zoe-caudron.workers.dev/handwrite",
 };
 

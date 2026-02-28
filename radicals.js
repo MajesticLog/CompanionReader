@@ -5,7 +5,7 @@
    - Jisho word suggestions for current query
 ========================= */
 
-const JISHO_API_R = (window.TSUNDOKU_CONFIG && window.TSUNDOKU_CONFIG.jishoApi) || "https://jisho.org/api/v1/search/words?keyword=";
+const WORKER_WORDS_R = (window.TSUNDOKU_CONFIG && window.TSUNDOKU_CONFIG.workerWordsEndpoint) || "https://minireader.zoe-caudron.workers.dev/words";
 
 let element2kanji = null;
 let elementIndexLoadError = null;

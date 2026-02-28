@@ -231,4 +231,14 @@
 <script defer="" src="radicals.js"></script>
 <script defer="" src="flashcards.js"></script>
 <script defer="" src="init.js"></script>
+
+<div id="ts-debug" style="position:fixed;right:10px;bottom:10px;max-width:340px;padding:10px 12px;border:1px solid rgba(0,0,0,0.25);border-radius:12px;background:rgba(255,255,255,0.9);font-size:12px;line-height:1.35;z-index:9999;display:none"></div>
+<script>
+(function(){
+  const box=document.getElementById('ts-debug');
+  function show(msg){ if(!box) return; box.style.display='block'; box.textContent=msg; }
+  window.addEventListener('error', (e)=>{ show('JS error: '+ (e.message||'') ); });
+  window.addEventListener('unhandledrejection', (e)=>{ show('Promise error: '+ (e.reason||'') ); });
+})();
+</script>
 </body></html>

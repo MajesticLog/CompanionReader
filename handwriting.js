@@ -1,4 +1,20 @@
 /* =========================
+   HANDWRITING (robust canvas sizing + pointer events)
+========================= */
+
+function hwForceCanvasSize(c){
+  if(!c) return;
+  // Use attribute size if present, else default
+  const aw = parseInt(c.getAttribute('width') || '420', 10);
+  const ah = parseInt(c.getAttribute('height') || '350', 10);
+  c.width = aw; c.height = ah;
+  c.style.width = aw + 'px';
+  c.style.height = ah + 'px';
+  c.style.touchAction = 'none';
+  c.style.pointerEvents = 'auto';
+}
+
+
    HANDWRITING (2 canvases)
    - Drawing + stroke capture
    - Recognition via Google Input Tools (through your worker)
@@ -63,30 +79,12 @@ function hwInit(){
   setTimeout(hwResizeAll, 0);
 }
 
-function hwResizeAll() {
-  Object.keys(hw).forEach(k => {
-    const slot = +k;
-    const st = hw[slot];
-    if (!st.canvas) return;
-
-    const wrap = st.canvas.parentElement;
-    const w = Math.min((wrap ? wrap.clientWidth : 480) - 24, 520);
-    const old = st.canvas.toDataURL();
-
-    st.canvas.width = Math.max(280, w);
-    st.canvas.height = Math.round(st.canvas.width * 0.75);
-
-    // restore previous drawing
-    const img = new Image();
-    img.onload = () => {
-      st.ctx.drawImage(img, 0, 0, st.canvas.width, st.canvas.height);
-      hwDrawGuide(slot);
-    };
-    img.src = old;
-
-    hwDrawGuide(slot);
-  });
+function hwResizeAll(){
+  hwCanvases.forEach(hwResizeCanvas);
+  // redraw grid after resize
+  hwCanvases.forEach(c=>{ try{ hwDrawGrid(c); }catch(e){} });
 }
+
 
 function hwDrawGuide(slot) {
   const st = hw[slot];
