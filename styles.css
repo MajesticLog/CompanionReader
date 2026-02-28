@@ -72,6 +72,9 @@ border-radius: 25px;
 }
 
   header {
+     background: color-mix(in srgb, var(--ink) 12%, var(--surface));
+  color: var(--ink);
+  border-bottom: 1px solid var(--border);
     background: var(--ink);
       border-radius: 25px;
     color: var(--paper);
