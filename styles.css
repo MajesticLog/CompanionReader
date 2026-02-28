@@ -220,7 +220,7 @@ canvas{
    ORIGINAL STYLES BELOW
 ========================= */
 
-:root {
+/*:root {
     --ink: #1a1410;
     --paper: #f5f0e8;
     --aged: #e8dfc8;
@@ -229,7 +229,7 @@ canvas{
     --muted: #7a6e60;
     --border: #c8b89a;
     --white: #faf8f4;
-  }
+  }*/
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -238,9 +238,8 @@ canvas{
   color: var(--ink);
   min-height: 100vh;
 
-  background-color: var(--paper);
   background-image:
-    url("./assets/paper-tile.png"),
+    url("./assets/test.png"),
     repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(0,0,0,0.04) 27px, rgba(0,0,0,0.04) 28px);
   background-repeat: repeat, repeat;
   background-size: 240px 240px, auto;
@@ -248,8 +247,7 @@ canvas{
 }
 
   header {
-    background: var(--ink);
-    color: var(--paper);
+   
     padding: 18px 32px;
     display: flex;
     align-items: center;
@@ -270,7 +268,7 @@ canvas{
   }
 
   nav {
-    background: var(--aged);
+  
     display: flex;
     border-bottom: 2px solid var(--border);
     padding: 0 24px;
@@ -284,14 +282,14 @@ canvas{
     font-size: 1rem;
     padding: 12px 20px;
     cursor: pointer;
-    color: var(--muted);
+   
     border-bottom: 3px solid transparent;
     margin-bottom: -2px;
     transition: all 0.2s;
     letter-spacing: 0.05em;
   }
   nav button.active {
-    color: var(--red);
+   
     border-bottom-color: var(--red);
     font-weight: 600;
   }
@@ -303,7 +301,7 @@ canvas{
   .panel.active { display: block; }
 
   .card {
-    background: var(--white);
+   
     border: 1px solid var(--border);
     border-radius: 2px;
     padding: 22px;
@@ -315,7 +313,7 @@ canvas{
     font-weight: 400;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: var(--muted);
+ 
     margin-bottom: 16px;
     border-bottom: 1px solid var(--border);
     padding-bottom: 8px;
@@ -355,7 +353,7 @@ canvas{
     font-size: 1.2rem;
     padding: 8px 12px;
     border: 1px solid var(--border);
-    background: var(--paper);
+  
     color: var(--ink);
     border-radius: 2px;
     outline: none;
