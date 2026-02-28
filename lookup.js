@@ -3,7 +3,7 @@
 ========================= */
 
 const WORKER_WORDS = (window.TSUNDOKU_CONFIG && window.TSUNDOKU_CONFIG.workerWordsEndpoint)
-  || "https://minireader.zoe-caudron.workers.dev/words";
+  || "https://minireader.zoe-caudron.workers.dev/";
 
 function workerUrl(keyword){
   const u = new URL(WORKER_WORDS);

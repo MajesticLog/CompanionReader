@@ -1040,3 +1040,6 @@ nav, nav button { pointer-events: auto !important; }
 .panel{ pointer-events:auto !important; }
 
 #panel-writing canvas{ background:#fff; }
+
+
+.notes-textarea{width:100%;min-height:200px;font-family:'Noto Serif JP',serif;font-size:0.95rem;line-height:1.9;padding:12px;border:var(--stroke) solid var(--line);background:var(--bg);outline:none;resize:vertical;border-radius:25px;}
