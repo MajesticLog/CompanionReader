@@ -21,7 +21,10 @@ function showPanel(id, btn) {
   // panel hooks (guarded so one failure doesn't kill the app)
   try { if (id === 'lists' && typeof renderBookList === 'function') renderBookList(); } catch(e) { console.error(e); }
   try { if (id === 'radicals' && typeof renderRadicals === 'function') renderRadicals(); } catch(e) { console.error(e); }
-  try { if (id === 'writing' && typeof hwResizeAll === 'function') setTimeout(hwResizeAll, 0); } catch(e) { console.error(e); }
+  try { if (id === 'writing' && typeof hwResizeAll === 'function') {
+    // Use requestAnimationFrame so display:block has taken effect before we measure clientWidth
+    requestAnimationFrame(() => requestAnimationFrame(hwResizeAll));
+  } } catch(e) { console.error(e); }
 
   try {
     if (id === 'flashcards') {

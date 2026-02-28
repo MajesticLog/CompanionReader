@@ -950,17 +950,17 @@ nav button{
 nav button:hover { transform: translateY(-1px); }
 nav button.active { border-color: var(--accent-stroke) !important; }
 
-/* Panels: soft slide/opacity without shadows */
+/* Panels: hidden panels use display:none so canvas events are never blocked */
 .panel{
-  opacity: 0;
-  transform: translateY(6px);
-  transition: opacity 180ms ease, transform 180ms ease;
-  pointer-events: none;
+  display: none;
 }
 .panel.active{
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
+  display: block;
+  animation: panelIn 180ms ease both;
+}
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Buttons (pill) micro interaction */

@@ -10,21 +10,31 @@ const JISHO_API_R = (window.TSUNDOKU_CONFIG && window.TSUNDOKU_CONFIG.jishoApi) 
 let element2kanji = null;
 let elementIndexLoadError = null;
 
-// IMPORTANT: Put file at /data/element2kanji.json (repo root /data folder)
+// IMPORTANT: element2kanji.json must be in the same folder as index.html
 async function loadElementIndex() {
   if (element2kanji) return element2kanji;
   if (elementIndexLoadError) throw elementIndexLoadError;
 
-  const url = new URL("./data/element2kanji.json", window.location.href).toString();
-  try {
-    const r = await fetch(url, { cache: "no-store" });
-    if (!r.ok) throw new Error(`Could not load element2kanji.json (HTTP ${r.status})`);
-    element2kanji = await r.json();
-    return element2kanji;
-  } catch (e) {
-    elementIndexLoadError = e;
-    throw e;
+  // Try root-relative path first, then same-directory fallback
+  const candidates = [
+    new URL("./element2kanji.json", window.location.href).toString(),
+    new URL("./data/element2kanji.json", window.location.href).toString(),
+  ];
+
+  let lastError;
+  for (const url of candidates) {
+    try {
+      const r = await fetch(url, { cache: "no-store" });
+      if (!r.ok) { lastError = new Error(`HTTP ${r.status} at ${url}`); continue; }
+      element2kanji = await r.json();
+      return element2kanji;
+    } catch (e) {
+      lastError = e;
+    }
   }
+
+  elementIndexLoadError = lastError;
+  throw lastError;
 }
 
 // Minimal radicals list (you can extend)
@@ -130,8 +140,9 @@ async function searchByRadicals() {
     idx = await loadElementIndex();
   } catch (e) {
     if (cand) cand.innerHTML =
-      `<p class="status-msg">⚠️ Could not load <code>data/element2kanji.json</code>.<br>
-      Ensure it exists at <code>/data/element2kanji.json</code> in your repo.</p>`;
+      `<p class="status-msg">⚠️ Could not load <code>element2kanji.json</code>.<br>
+      Make sure it lives in the <strong>same folder</strong> as <code>index.html</code>.<br>
+      <small style="opacity:0.7">${e.message}</small></p>`;
     return;
   }
 
