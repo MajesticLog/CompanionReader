@@ -13,10 +13,11 @@
 
   body {
   font-family: 'Crimson Pro', serif;
+border-radius: 25px;
   color: var(--ink);
   min-height: 100vh;
 
-  background-color: var(--paper);
+  /*background-color: var(--paper);*/
   background-image:
     url("./assets/paper-tile.png"),
     repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(0,0,0,0.04) 27px, rgba(0,0,0,0.04) 28px);
@@ -27,6 +28,7 @@
 
   header {
     background: var(--ink);
+      border-radius: 25px;
     color: var(--paper);
     padding: 18px 32px;
     display: flex;
@@ -42,12 +44,14 @@
   }
   header span {
     font-size: 0.85rem;
+      border-radius: 25px;
     color: var(--border);
     font-style: italic;
     margin-left: auto;
   }
 
   nav {
+      border-radius: 25px;
     background: var(--aged);
     display: flex;
     border-bottom: 2px solid var(--border);
@@ -56,6 +60,7 @@
     flex-wrap: wrap;
   }
   nav button {
+      border-radius: 25px;
     background: none;
     border: none;
     font-family: 'Crimson Pro', serif;
@@ -69,6 +74,7 @@
     letter-spacing: 0.05em;
   }
   nav button.active {
+      border-radius: 25px;
     color: var(--red);
     border-bottom-color: var(--red);
     font-weight: 600;
@@ -81,6 +87,7 @@
   .panel.active { display: block; }
 
   .card {
+      border-radius: 25px;
     background: var(--white);
     border: 1px solid var(--border);
     border-radius: 2px;
@@ -88,6 +95,7 @@
     box-shadow: 2px 3px 12px rgba(0,0,0,0.06);
   }
   .card h2 {
+      border-radius: 25px;
     font-family: 'Noto Serif JP', serif;
     font-size: 0.85rem;
     font-weight: 400;
@@ -100,6 +108,7 @@
   }
 
   .btn {
+      border-radius: 25px;
     background: var(--ink);
     color: var(--paper);
     border: none;
