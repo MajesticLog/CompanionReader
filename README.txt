@@ -1,9 +1,15 @@
-TsundokuFriend.io (GitHub Pages)
+TsundokuFriend (fixed: handwriting + radicals)
 
-Handwriting recognition is proxied via your Cloudflare Worker:
-- POST https://minireader.zoe-caudron.workers.dev/handwrite
+1) Put `element2kanji.json` next to `index.html` (same folder).
+   - If you prefer /data/element2kanji.json, edit `ELEMENT2KANJI_URL` in radicals.js.
 
-Radical/component search uses a local index:
-- data/element2kanji.json  (optional but recommended)
+2) Deploy to GitHub Pages
+   - Repo Settings → Pages → Deploy from branch → / (root)
+   - Make sure all files are in the published folder.
 
-If you add the full file (from the kanjivg-radical project), radical search covers most kanji.
+3) Worker endpoints
+   - handwriting.js uses:
+       handwriteEndpoint: https://minireader.zoe-caudron.workers.dev/handwrite
+       workerWordsEndpoint: https://minireader.zoe-caudron.workers.dev/words
+   - If yours differs, set in state.js:
+       window.TSUNDOKU_CONFIG = { ... }  (see state.js)
