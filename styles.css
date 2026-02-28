@@ -674,3 +674,86 @@ border-radius: 25px;
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: var(--aged); }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* Cards / panels */
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(6px);
+}
+
+/* Tabs */
+nav {
+  background: color-mix(in srgb, var(--surface) 65%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+
+nav button {
+  border-radius: var(--radius-pill);
+}
+
+/* Inputs */
+.search-bar input,
+.new-book-form input,
+textarea,
+select {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  color: var(--ink);
+}
+
+/* Buttons */
+.btn {
+  border-radius: var(--radius-pill);
+  background: var(--accent-2);
+  color: color-mix(in srgb, var(--ink) 12%, white);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn:hover { filter: brightness(1.03); }
+.btn:active { transform: translateY(1px); }
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink);
+}
+
+.btn-red { /* if you used this earlier */
+  background: var(--accent);
+  color: var(--ink);
+}
+
+/* Focus ring (keyboard nav) */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* Tables */
+.words-table th {
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  border: 1px solid var(--border);
+}
+
+.words-table td {
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+/* Canvas */
+canvas {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+}
