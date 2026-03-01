@@ -1043,3 +1043,15 @@ nav, nav button { pointer-events: auto !important; }
 
 
 .notes-textarea{width:100%;min-height:200px;font-family:'Noto Serif JP',serif;font-size:0.95rem;line-height:1.9;padding:12px;border:var(--stroke) solid var(--line);background:var(--bg);outline:none;resize:vertical;border-radius:25px;}
+
+#book-meta-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.meta-chip{display:flex;gap:8px;align-items:center;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-box);background:transparent}
+.meta-label{font-size:0.85rem;color:var(--ink);opacity:0.8}
+.meta-select{border:1.5px solid var(--border);border-radius:var(--radius-pill);padding:6px 10px;background:transparent;color:var(--ink);font-family:'Crimson Pro',serif}
+.star-row{display:flex;gap:6px;align-items:center}
+.star-btn{border:1.5px solid var(--border);background:transparent;border-radius:var(--radius-pill);padding:4px 10px;cursor:pointer;font-family:'Crimson Pro',serif;color:var(--ink)}
+.star-btn.on{border-color:var(--accent2-stroke)}
+.star-btn.clear{opacity:0.7}
+.book-title-row{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.book-badges{display:flex;gap:6px;align-items:center}
+.badge{border:1.5px solid var(--border);border-radius:var(--radius-pill);padding:2px 8px;font-size:0.75rem;opacity:0.85}

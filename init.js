@@ -8,6 +8,7 @@ function initApp() {
 
   // Books panel
   if (typeof renderBookList === "function") renderBookList();
+  if (typeof renderBookDetail === "function") renderBookDetail();
 }
 
 if (document.readyState === "loading") {

@@ -1,4 +1,6 @@
 /* =========================
+   HANDWRITING
+========================= */
 
 function hwForceCanvasSize(c){
   if(!c) return;
@@ -22,7 +24,7 @@ function hwForceCanvasSize(c){
 ========================= */
 
 const HW_ENDPOINT = (window.TSUNDOKU_CONFIG && window.TSUNDOKU_CONFIG.handwriteEndpoint) || "";
-const JISHO_API = (window.TSUNDOKU_CONFIG && window.TSUNDOKU_CONFIG.jishoApi) || "https://jisho.org/api/v1/search/words?keyword=";
+const WORKER_WORDS_HW = (window.TSUNDOKU_CONFIG && window.TSUNDOKU_CONFIG.workerWordsEndpoint) || "https://minireader.zoe-caudron.workers.dev/";
 
 const hw = {
   1: { canvasId: "writing-canvas-1", candidatesId: "hw-candidates-1", statusId: "hw-status-1" },
@@ -301,7 +303,9 @@ function hwSuggest() {
 
     out.innerHTML = '<p class="status-msg">Searching…</p>';
     try {
-      const r = await fetch(JISHO_API + encodeURIComponent(kw));
+      const u = new URL(WORKER_WORDS_HW);
+      u.searchParams.set('keyword', kw);
+      const r = await fetch(u.toString());
       const data = await r.json();
       renderMiniEntries(data.data || [], out);
     } catch {
@@ -359,3 +363,20 @@ window.hwLookup = hwLookup;
 window.hwClearQuery = hwClearQuery;
 
 document.addEventListener('DOMContentLoaded', hwInit);
+
+
+function hwSearchWord(){
+  const q = (document.getElementById('hw-query')?.value || '').trim();
+  if (!q) return;
+  const inp = document.getElementById('search-input');
+  if (inp) inp.value = q;
+  if (typeof showPanel === 'function') showPanel('lookup');
+  if (typeof lookupWord === 'function') lookupWord();
+}
+
+window.hwInit = hwInit;
+window.hwResizeAll = hwResizeAll;
+window.hwRecognize = hwRecognize;
+window.hwClear = hwClear;
+window.hwClearQuery = hwClearQuery;
+window.hwSearchWord = hwSearchWord;

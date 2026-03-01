@@ -216,7 +216,7 @@ function radicalSearchWord() {
   if (!q) return;
   document.getElementById("search-input").value = q;
   showPanel("lookup");
-  lookupWord(q);
+  lookupWord();
 }
 
 function radicalClearAll() {

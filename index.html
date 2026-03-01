@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
 <header>
@@ -17,9 +18,9 @@
   </div>
 
   <div class="theme-dots" aria-label="Theme">
-    <button class="theme-dot flowers" title="Flowers" onclick="applyTheme('flowers')"></button>
-    <button class="theme-dot joyful" title="Joyful" onclick="applyTheme('joyful')"></button>
-    <button class="theme-dot plum" title="Plum" onclick="applyTheme('plum')"></button>
+    <button class="theme-dot flowers" data-theme="flowers" title="Flowers"></button>
+    <button class="theme-dot joyful"  data-theme="joyful"  title="Joyful"></button>
+    <button class="theme-dot plum"    data-theme="plum"    title="Plum"></button>
   </div>
 
   <span>Japanese Reading Companion</span>
@@ -27,7 +28,7 @@
 
 <nav>
   <button class="active" onclick="showPanel('lookup', this)">🔍 Lookup</button>
-  <button onclick="showPanel('lists', this)">📚 Word Lists</button>
+  <button onclick="showPanel('books', this)">📖 Books</button>
   <button onclick="showPanel('writing', this)">✍️ Handwriting</button>
   <button onclick="showPanel('radicals', this)">部首 Radicals</button>
   <button onclick="showPanel('flashcards', this)">🃏 Flashcards</button>
@@ -35,7 +36,7 @@
 
 <main>
 
-  <!-- LOOKUP -->
+  <!-- LOOKUP PANEL -->
   <section class="panel active" id="panel-lookup">
     <div class="lookup-grid">
       <div class="card">
@@ -46,7 +47,6 @@
         </div>
         <div id="results"><p class="status-msg">Search for any Japanese word above.</p></div>
       </div>
-
       <div class="card">
         <h2>Quick Notes — メモ</h2>
         <textarea id="quick-notes" class="notes-textarea" placeholder="Jot down notes, sentences, context…"></textarea>
@@ -54,8 +54,8 @@
     </div>
   </section>
 
-  <!-- LISTS -->
-  <section class="panel" id="panel-lists">
+  <!-- BOOKS PANEL -->
+  <section class="panel" id="panel-books">
     <div class="lists-layout">
       <div>
         <div class="card" style="margin-bottom:0">
@@ -69,13 +69,31 @@
       </div>
 
       <div class="card">
-        <h2 id="list-title">Word List — 単語リスト</h2>
-        <div id="word-list-content"><p class="empty-state">Select or create a book to see its word list.</p></div>
+        <h2 id="book-detail-title">Book — 詳細</h2>
+
+        <div id="book-meta-controls" style="display:none;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0 14px">
+          <div class="meta-chip">
+            <label for="book-status" class="meta-label">Status</label>
+            <select id="book-status" class="meta-select">
+              <option value="reading">Reading</option>
+              <option value="read">Read</option>
+            </select>
+          </div>
+
+          <div class="meta-chip">
+            <span class="meta-label">Rating</span>
+            <div id="book-rating" class="star-row" aria-label="Rating"></div>
+          </div>
+
+          <button class="btn btn-sm btn-outline" type="button" onclick="deleteBook()">Delete Book</button>
+        </div>
+
+        <div id="book-detail-content"><p class="empty-state">Select or create a book to see details.</p></div>
       </div>
     </div>
   </section>
 
-  <!-- HANDWRITING -->
+  <!-- HANDWRITING PANEL -->
   <section class="panel" id="panel-writing">
     <div class="writing-layout">
       <div class="card canvas-wrap">
@@ -89,7 +107,7 @@
               <button class="btn btn-sm" type="button" onclick="hwRecognize(1)">Recognize</button>
             </div>
             <div id="hw-status-1" class="status-msg">Draw a kanji, then click Recognize.</div>
-            <div id="hw-candidates-1"></div>
+            <div id="hw-candidates-1" class="candidate-row"></div>
           </div>
 
           <div class="hw-box">
@@ -99,26 +117,27 @@
               <button class="btn btn-sm" type="button" onclick="hwRecognize(2)">Recognize</button>
             </div>
             <div id="hw-status-2" class="status-msg">Draw a kanji, then click Recognize.</div>
-            <div id="hw-candidates-2"></div>
+            <div id="hw-candidates-2" class="candidate-row"></div>
           </div>
         </div>
 
         <div class="search-bar" style="margin-top:14px">
-          <input id="hw-query" type="text" placeholder="Click kanji above to build a word…" autocomplete="off">
+          <input id="hw-query" type="text" placeholder="Click candidates to build a word…" autocomplete="off">
           <button class="btn" type="button" onclick="hwSearchWord()">Search</button>
           <button class="btn btn-outline" type="button" onclick="hwClearQuery()">Clear</button>
         </div>
+
         <div id="hw-word-suggestions"><p class="status-msg">Build a query to see suggestions.</p></div>
       </div>
     </div>
   </section>
 
-  <!-- RADICALS -->
+  <!-- RADICALS PANEL -->
   <section class="panel" id="panel-radicals">
     <div class="radical-layout">
       <div class="card">
         <h2>Radical Picker — 部首</h2>
-        <p class="radical-info">Select one or more parts. Then click “Get Kanji” and choose characters to build a word.</p>
+        <p class="radical-info">Select one or more parts, then click “Get Kanji”. Click candidate kanji to build a word.</p>
 
         <div id="selected-radicals-display" class="selected-radicals">—</div>
         <div class="stroke-filter" id="stroke-filter"></div>
@@ -126,12 +145,13 @@
 
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
           <button class="btn" type="button" onclick="searchByRadicals()">Get Kanji</button>
-          <button class="btn btn-outline" type="button" onclick="clearRadicals()">Clear selection</button>
+          <button class="btn btn-outline" type="button" onclick="clearRadicals()">Clear</button>
         </div>
       </div>
 
       <div class="card">
         <h2>Build Word — 組み合わせ</h2>
+
         <div class="search-bar">
           <input id="radical-query" type="text" placeholder="Click kanji candidates to build…" autocomplete="off">
           <button class="btn" type="button" onclick="radicalSearchWord()">Search</button>
@@ -144,13 +164,14 @@
     </div>
   </section>
 
-  <!-- FLASHCARDS -->
+  <!-- FLASHCARDS PANEL -->
   <section class="panel" id="panel-flashcards">
     <div class="fc-setup" id="fc-setup">
       <div class="card">
         <h2>Study Session — 勉強</h2>
         <p class="status-msg">Choose books and start.</p>
         <div class="fc-book-grid" id="fc-book-grid"></div>
+
         <div class="fc-options">
           <div class="fc-option-row">
             <label>Show</label>
@@ -180,6 +201,7 @@
           </div>
         </div>
       </div>
+
       <div style="text-align:center">
         <button class="btn" style="padding:12px 36px;font-size:1.1rem;letter-spacing:0.1em" type="button" onclick="startFlashcards()">Start Study 開始</button>
       </div>
@@ -222,6 +244,7 @@
         <button class="fc-rating-btn fc-btn-good" type="button" onclick="rateCard('good')"><span class="label">Good</span><span class="sub">わかった</span></button>
         <button class="fc-rating-btn fc-btn-easy" type="button" onclick="rateCard('easy')"><span class="label">Easy</span><span class="sub">簡単</span></button>
       </div>
+
       <div class="fc-shortcuts">Space / Enter = flip &nbsp;|&nbsp; 1 Again &nbsp; 2 Hard &nbsp; 3 Good &nbsp; 4 Easy</div>
     </div>
 
@@ -241,7 +264,6 @@
 
 </main>
 
-<!-- Scripts (order matters) -->
 <script src="state.js"></script>
 <script src="nav.js"></script>
 <script src="books.js"></script>

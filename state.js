@@ -11,5 +11,6 @@ window.TSUNDOKU_CONFIG = {
    STATE
 ========================= */
 let books = JSON.parse(localStorage.getItem('rdbooks') || '[]');
+window.books = books;
 let activeBook = null;
 let selectedRadicals = new Set();
