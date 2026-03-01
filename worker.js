@@ -1,144 +1,208 @@
 /**
  * Cloudflare Worker: minireader
- * GET  /?keyword=...   -> Jotoba.de (open-source Jisho alternative, CORS-friendly)
- * POST /handwrite      -> Google Input Tools handwriting proxy
  *
- * WHY JOTOBA instead of Jisho:
- * Jisho blocks requests from Cloudflare Workers with HTTP 403 regardless of
- * headers. Jotoba (jotoba.de) is an open-source Japanese dictionary with a
- * proper public API, CORS enabled, no authentication required.
- * API docs: https://jotoba.de/docs.html
+ * GET  /?keyword=...   → dictionary search (multi-API fallback chain)
+ * POST /handwrite      → Google Input Tools handwriting proxy
+ *
+ * Dictionary strategy (in order):
+ *  1. jotoba.de  — open-source Japanese dictionary, best results
+ *  2. kanjiapi.dev — open, CORS, no blocking; kanji-only but reliable
+ *
+ * Both responses are normalised to Jisho-compatible JSON so the
+ * frontend needs no changes.
  */
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    if (request.method === "OPTIONS") {
+    if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders() });
     }
 
     // ── Handwriting proxy ──────────────────────────────────────────────────
-    if (url.pathname === "/handwrite") {
-      if (request.method !== "POST") return json({ error: "Use POST" }, 405);
-
+    if (url.pathname === '/handwrite') {
+      if (request.method !== 'POST') return json({ error: 'Use POST' }, 405);
       let body;
       try { body = await request.json(); }
-      catch (e) { return json({ error: "BAD_REQUEST_BODY", detail: String(e) }, 400); }
+      catch (e) { return json({ error: 'BAD_REQUEST_BODY', detail: String(e) }, 400); }
 
-      let upstream;
       try {
-        upstream = await fetch(
-          "https://www.google.com/inputtools/request?ime=handwriting&app=translate&cs=1",
+        const upstream = await fetch(
+          'https://www.google.com/inputtools/request?ime=handwriting&app=translate&cs=1',
           {
-            method: "POST",
+            method: 'POST',
             headers: {
-              "Content-Type": "application/json; charset=UTF-8",
-              "Accept": "application/json",
-              "Origin": "https://translate.google.com",
-              "Referer": "https://translate.google.com/",
+              'Content-Type': 'application/json; charset=UTF-8',
+              'Accept': 'application/json',
+              'Origin': 'https://translate.google.com',
+              'Referer': 'https://translate.google.com/',
             },
             body: JSON.stringify(body),
           }
         );
+        const text = await upstream.text();
+        return new Response(text, {
+          status: upstream.status,
+          headers: { ...corsHeaders(), 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+        });
       } catch (e) {
-        return json({ error: "UPSTREAM_FETCH_FAILED", upstream: "google.com", detail: String(e) }, 502);
+        return json({ error: 'HANDWRITE_FAILED', detail: String(e) }, 502);
       }
-
-      const text = await upstream.text();
-      return new Response(text, {
-        status: upstream.status,
-        headers: { ...corsHeaders(), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
-      });
     }
 
-    // ── Dictionary proxy (Jotoba) ──────────────────────────────────────────
-    const keyword = url.searchParams.get("keyword") || "";
-    if (!keyword) return json({ error: "Missing keyword" }, 400);
+    // ── Dictionary proxy ───────────────────────────────────────────────────
+    const keyword = url.searchParams.get('keyword') || '';
+    if (!keyword) return json({ error: 'Missing keyword' }, 400);
 
-    // Edge cache
-    const cache = caches.default;
-    const cacheKey = new Request(
-      "https://cache.minireader.local/jotoba?kw=" + encodeURIComponent(keyword),
-      { method: "GET" }
-    );
-    const cached = await cache.match(cacheKey);
-
-    let upstream;
+    // 1️⃣ Try Jotoba (best quality, sometimes unreachable from CF)
     try {
-      upstream = await fetch("https://jotoba.de/api/search/words", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        body: JSON.stringify({ query: keyword, no_english: false, language: "English" }),
+      const r = await fetch('https://jotoba.de/api/search/words', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ query: keyword, no_english: false, language: 'English' }),
+        signal: AbortSignal.timeout(4000),
       });
-    } catch (e) {
-      if (cached) return cachedResponse(await cached.text());
-      return json({ error: "UPSTREAM_FETCH_FAILED", detail: String(e) }, 502);
+      if (r.ok) {
+        const jd = await r.json();
+        const data = normaliseJotoba(jd.words || []);
+        if (data.length) {
+          return okJson({ meta: { status: 200, source: 'jotoba' }, data }, ctx);
+        }
+      }
+    } catch (_) { /* fall through */ }
+
+    // 2️⃣ Try kanjiapi.dev — works for any single kanji character
+    //    Also works for the first kanji in a multi-char string
+    const firstChar = [...keyword][0] || '';
+    const isKanji   = /[\u4e00-\u9fff\u3400-\u4dbf]/.test(firstChar);
+
+    if (isKanji) {
+      try {
+        // /v1/words/{char} — returns word entries containing this kanji
+        const r = await fetch(`https://kanjiapi.dev/v1/words/${encodeURIComponent(firstChar)}`, {
+          headers: { 'Accept': 'application/json' },
+          signal: AbortSignal.timeout(4000),
+        });
+        if (r.ok) {
+          const words = await r.json(); // array of word objects
+          const data  = normaliseKanjiapi(words, keyword);
+          if (data.length) {
+            return okJson({ meta: { status: 200, source: 'kanjiapi' }, data }, ctx);
+          }
+        }
+      } catch (_) { /* fall through */ }
+
+      // Also fetch kanji details for the first char
+      try {
+        const r = await fetch(`https://kanjiapi.dev/v1/kanji/${encodeURIComponent(firstChar)}`, {
+          headers: { 'Accept': 'application/json' },
+          signal: AbortSignal.timeout(4000),
+        });
+        if (r.ok) {
+          const k = await r.json();
+          const data = normaliseKanjiDetail(k, firstChar);
+          return okJson({ meta: { status: 200, source: 'kanjiapi-detail' }, data }, ctx);
+        }
+      } catch (_) { /* fall through */ }
     }
 
-    if (!upstream.ok) {
-      if (cached) return cachedResponse(await cached.text());
-      return json({ error: "JOTOBA_UNAVAILABLE", detail: `HTTP ${upstream.status}` }, 502);
-    }
-
-    const jotobaData = await upstream.json();
-
-    // Normalise Jotoba response → Jisho-compatible shape so the frontend
-    // doesn't need changes. Jotoba words look like:
-    // { reading: { kana, kanji }, senses: [{ glosses, pos }], jlpt_lvl }
-    const data = (jotobaData.words || []).map(w => ({
-      japanese: [{
-        word:    w.reading?.kanji || w.reading?.kana || "",
-        reading: w.reading?.kana  || "",
-      }],
-      senses: (w.senses || []).map(s => ({
-        english_definitions: s.glosses || [],
-        parts_of_speech:     s.pos ? [s.pos] : [],
-      })),
-      jlpt: w.jlpt_lvl ? [`jlpt-n${w.jlpt_lvl}`] : [],
-      is_common: w.common || false,
-    }));
-
-    const respBody = JSON.stringify({ meta: { status: 200 }, data });
-    const resp = new Response(respBody, {
-      status: 200,
-      headers: {
-        ...corsHeaders(),
-        "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": "public, max-age=600",
-      },
-    });
-    ctx.waitUntil(cache.put(cacheKey, resp.clone()));
-    return resp;
+    // 3️⃣ All APIs failed
+    return json({ error: 'DICTIONARY_UNAVAILABLE', detail: 'All upstream APIs failed', data: [] }, 502);
   },
 };
 
-function cachedResponse(text) {
-  return new Response(text, {
-    status: 200,
-    headers: {
-      ...corsHeaders(),
-      "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "public, max-age=60",
-      "X-Served-From": "stale-cache",
-    },
-  });
+// ── Normalise Jotoba → Jisho shape ─────────────────────────────────────────
+function normaliseJotoba(words) {
+  return words.map(w => ({
+    japanese: [{
+      word:    w.reading?.kanji || w.reading?.kana || '',
+      reading: w.reading?.kana  || '',
+    }],
+    senses: (w.senses || []).map(s => ({
+      english_definitions: s.glosses || [],
+      parts_of_speech:     s.pos ? [s.pos] : [],
+    })),
+    jlpt:      w.jlpt_lvl ? [`jlpt-n${w.jlpt_lvl}`] : [],
+    is_common: w.common || false,
+  }));
 }
 
+// ── Normalise kanjiapi /v1/words → Jisho shape ─────────────────────────────
+// kanjiapi word entry: { variants: [{written, pronounced}], meanings_in_context: [{meaning, in_compounds, ...}] }
+function normaliseKanjiapi(words, query) {
+  const out = [];
+  for (const w of words) {
+    if (!w.variants?.length) continue;
+
+    // Filter: prefer entries whose written form starts with or matches the query
+    const variants = w.variants.filter(v =>
+      v.written?.includes(query) || query.includes(v.written) || v.written?.startsWith(query)
+    );
+    const v = variants[0] || w.variants[0];
+
+    const meanings = (w.meanings_in_context || [])
+      .flatMap(m => m.meaning ? [m.meaning] : [])
+      .slice(0, 4);
+
+    if (!meanings.length) continue;
+
+    out.push({
+      japanese: [{
+        word:    v.written    || '',
+        reading: v.pronounced || '',
+      }],
+      senses: [{ english_definitions: meanings, parts_of_speech: [] }],
+      jlpt:      [],
+      is_common: false,
+    });
+
+    if (out.length >= 8) break;
+  }
+  return out;
+}
+
+// ── Normalise kanjiapi /v1/kanji → Jisho shape ─────────────────────────────
+// Used when a single kanji is searched — gives on/kun readings + meanings
+function normaliseKanjiDetail(k, char) {
+  const readings = [
+    ...(k.kun_readings || []).map(r => r.replace(/\./g, '')),
+    ...(k.on_readings  || []).map(r => r),
+  ].filter(Boolean).slice(0, 4);
+
+  const meanings = (k.meanings || []).slice(0, 5);
+
+  return readings.length || meanings.length ? [{
+    japanese: readings.map(r => ({ word: char, reading: r })).concat(
+      readings.length ? [] : [{ word: char, reading: '' }]
+    ).slice(0, 1),
+    senses: [{ english_definitions: meanings, parts_of_speech: [] }],
+    jlpt:      k.jlpt ? [`jlpt-n${k.jlpt}`] : [],
+    is_common: false,
+  }] : [];
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
 function corsHeaders() {
   return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "*",
+    'Access-Control-Allow-Origin':  '*',
+    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Headers': '*',
   };
 }
 
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), {
     status,
-    headers: { ...corsHeaders(), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
+    headers: { ...corsHeaders(), 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
   });
+}
+
+function okJson(obj, ctx) {
+  const body = JSON.stringify(obj);
+  const resp = new Response(body, {
+    status: 200,
+    headers: { ...corsHeaders(), 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=600' },
+  });
+  return resp;
 }
