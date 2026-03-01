@@ -176,12 +176,13 @@ function renderVocabTable(entry) {
       <td class="kanji-cell">${shelfEsc(w.word)}</td>
       <td class="reading-cell">${shelfEsc(w.reading)}</td>
       <td class="meaning-cell">${shelfEsc(w.meaning)}</td>
+      ${w.jlpt ? '<td class="jlpt-cell"><span class="jlpt-badge jlpt-sm">' + w.jlpt.toUpperCase() + '</span></td>' : '<td class="jlpt-cell">—</td>'}
       <td class="action-cell"><button class="del-btn" onclick="removeShelfWord('${entry.id}', ${realIdx})" title="Remove">✕</button></td>
     </tr>`;
   }).join('');
 
   return `<table class="words-table">
-    <thead><tr><th>Word</th><th>Reading</th><th>Meaning</th><th></th></tr></thead>
+    <thead><tr><th>Word</th><th>Reading</th><th>Meaning</th><th>JLPT</th><th></th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
@@ -281,13 +282,13 @@ function rateShelfEntry(id, rating) {
 }
 
 // ── Vocab operations ───────────────────────────────
-function addWordToShelf(word, reading, meaning, bookId) {
+function addWordToShelf(word, reading, meaning, bookId, jlpt = '') {
   // bookId here is a shelf entry id (sb…)
   const entry = shelf.find(e => e.id === bookId);
   if (!entry) return false;
   // avoid exact duplicates
   if (entry.vocab.some(v => v.word === word && v.reading === reading)) return false;
-  entry.vocab.push({ word, reading, meaning });
+  entry.vocab.push({ word, reading, meaning, jlpt });
   saveShelf();
   if (activeShelfId === bookId) renderShelfDetail();
   renderShelf(); // update word count

@@ -41,15 +41,15 @@ function renderResults(entries) {
   }
 
   res.innerHTML = '';
-  entries.slice(0, 8).forEach(entry => {
+  // Use a numeric index for IDs — sanitize() turns all kanji to '_' causing collisions
+  entries.slice(0, 8).forEach((entry, i) => {
     const word     = entry.japanese[0]?.word || entry.japanese[0]?.reading || '';
     const reading  = entry.japanese[0]?.reading || '';
     const meanings = entry.senses[0]?.english_definitions?.join('; ') || '';
     const tags     = [...(entry.senses[0]?.parts_of_speech || [])].slice(0,2).join(', ');
     const jlpt     = entry.jlpt?.[0] || '';
-    const sid      = sanitize(word);
+    const uid      = 'res' + i;   // guaranteed unique, no kanji collision
 
-    // Options: shelf entries (Books tab) + legacy word-list books
     const shelfOpts = (typeof shelfBookOptions === 'function') ? shelfBookOptions() : '';
     const oldOpts   = (typeof books !== 'undefined' && books.length)
       ? books.map(b => `<option value="${b.id}">${escapeHtml(b.title)}</option>`).join('')
@@ -67,11 +67,11 @@ function renderResults(entries) {
       <div class="meanings">${escapeHtml(meanings)}</div>
       ${tags ? `<div class="tags">${escapeHtml(tags)}</div>` : ''}
       <div class="add-btn">
-        <select class="lookup-book-select" id="bk-${sid}" style="max-width:200px">
+        <select class="lookup-book-select" id="bk-${uid}" style="max-width:200px">
           ${allOpts}
         </select>
         <button class="btn btn-sm"
-          onclick='addToSelectedBook(${JSON.stringify(word)}, ${JSON.stringify(reading)}, ${JSON.stringify(meanings)}, "bk-${sid}")'>
+          onclick='addToSelectedBook(${JSON.stringify(word)}, ${JSON.stringify(reading)}, ${JSON.stringify(meanings)}, "bk-${uid}", ${JSON.stringify(jlpt)})'>
           + Add to book
         </button>
       </div>`;
@@ -79,14 +79,18 @@ function renderResults(entries) {
   });
 }
 
-function addToSelectedBook(word, reading, meaning, selectId) {
+function addToSelectedBook(word, reading, meaning, selectId, jlpt = '') {
   const sel = document.getElementById(selectId);
-  if (!sel || !sel.value) return;
+  if (!sel || !sel.value) {
+    // Fallback: if select not found, show an alert so the bug is visible
+    console.error('[lookup] select not found:', selectId);
+    return;
+  }
   const bookId = sel.value;
 
   let added = false;
   if (bookId.startsWith('sb') && typeof addWordToShelf === 'function') {
-    added = addWordToShelf(word, reading, meaning, bookId);
+    added = addWordToShelf(word, reading, meaning, bookId, jlpt);
   } else if (typeof addToBook === 'function') {
     addToBook(word, reading, meaning, selectId);
     added = true;

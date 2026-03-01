@@ -134,10 +134,10 @@ function showResults() {
   const total = again+hard+good+easy;
   const pct   = total > 0 ? Math.round((good+easy)/total*100) : 0;
   document.getElementById('fc-results-grid').innerHTML = `
-    <div class="fc-results-stat"><div class="big" style="color:var(--red)">${again}</div><div class="lbl">Again</div></div>
-    <div class="fc-results-stat"><div class="big" style="color:#e67e22">${hard}</div><div class="lbl">Hard</div></div>
-    <div class="fc-results-stat"><div class="big" style="color:#27ae60">${good}</div><div class="lbl">Good</div></div>
-    <div class="fc-results-stat"><div class="big" style="color:#2980b9">${easy}</div><div class="lbl">Easy</div></div>
+    <div class="fc-results-stat"><div class="big" style="color:#c05050">${again}</div><div class="lbl">Again</div></div>
+    <div class="fc-results-stat"><div class="big" style="color:#b07028">${hard}</div><div class="lbl">Hard</div></div>
+    <div class="fc-results-stat"><div class="big" style="color:#3a8a50">${good}</div><div class="lbl">Good</div></div>
+    <div class="fc-results-stat"><div class="big" style="color:#3a70a0">${easy}</div><div class="lbl">Easy</div></div>
     <div class="fc-results-stat" style="grid-column:span 4"><div class="big">${pct}%</div><div class="lbl">Known</div></div>`;
   const al = document.getElementById('fc-again-list');
   if (fc.againWords.length) {
