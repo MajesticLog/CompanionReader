@@ -136,8 +136,8 @@ h2 {
   border-bottom: var(--stroke-strong) solid var(--border-strong);
 }
 .topbar h1 {
-  font-family: 'Funnel Display', sans-serif;
-  font-weight: 500;
+  font-family: 'Kosugi Maru', sans-serif;
+  font-weight: 400;
   font-size: 1.2rem;
   letter-spacing: 0.06em;
   color: var(--ink);
@@ -153,37 +153,44 @@ h2 {
   white-space: nowrap;
 }
 
-/* Theme dots — filled swatch (intentional) */
+/* Theme dots — hardcoded per-theme swatches, always circular */
 .theme-dots { display: flex; gap: 8px; align-items: center; }
 .theme-dot {
-  width: 15px; height: 15px;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;   /* prevent flex from squashing */
   border-radius: 50%;
-  border: var(--stroke-strong) solid var(--border-strong);
-  background: var(--dot);
+  border: 2px solid transparent;
   cursor: pointer;
   transition: transform 0.12s ease, border-color 0.12s ease;
+  /* background set per-dot below */
 }
-.theme-dot:hover  { transform: scale(1.18); }
+.theme-dot:hover  { transform: scale(1.25); }
 .theme-dot.active { border-color: var(--ink); }
+
+/* Each dot always shows its own theme's main colour, regardless of active theme */
+.theme-dot[data-theme="flowers"] { background: #CAC4F6; }
+.theme-dot[data-theme="joyful"]  { background: #FFB8D9; }
+.theme-dot[data-theme="plum"]    { background: #AF6384; }
 
 /* ── NAV (filled — intentional) ─────────────────── */
 nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
-  padding: 0 18px;
+  gap: 4px;
+  padding: 8px 18px;
   background: color-mix(in srgb, var(--accent) 55%, var(--bg) 45%);
   border-bottom: var(--stroke) solid var(--border-strong);
+  align-items: center;
 }
 nav button {
   background: transparent;
-  border: none;
-  border-bottom: var(--stroke-strong) solid transparent;
-  margin-bottom: calc(-1 * var(--stroke));
+  border: var(--stroke) solid transparent;
+  border-radius: var(--radius-pill);
   font-family: 'Funnel Display', sans-serif;
   font-weight: 400;
   font-size: 0.95rem;
-  padding: 11px 18px;
+  padding: 6px 16px;
   cursor: pointer;
   color: var(--ink);
   opacity: 0.62;
@@ -191,7 +198,7 @@ nav button {
   letter-spacing: 0.04em;
 }
 nav button:hover         { opacity: 1; transform: translateY(-1px); }
-nav button.active        { opacity: 1; border-bottom-color: var(--ink); font-weight: 500; }
+nav button.active        { opacity: 1; border-color: var(--ink); font-weight: 500; }
 nav button:focus-visible { outline: none; box-shadow: var(--ring) !important; }
 
 /* ── Main layout ─────────────────────────────────── */
