@@ -2,8 +2,8 @@
 // Config (endpoints)
 // =========================
 window.TSUNDOKU_CONFIG = {
-  jishoApi: "https://jisho.org/api/v1/search/words?keyword=",
-  workerWordsEndpoint: "https://minireader.zoe-caudron.workers.dev/",
+  // Route Jisho through the Worker so it sends browser-like headers (avoids 403)
+  jishoApi: "https://minireader.zoe-caudron.workers.dev/?keyword=",
   handwriteEndpoint: "https://minireader.zoe-caudron.workers.dev/handwrite",
 };
 
@@ -11,8 +11,5 @@ window.TSUNDOKU_CONFIG = {
    STATE
 ========================= */
 let books = JSON.parse(localStorage.getItem('rdbooks') || '[]');
-window.books = books;
 let activeBook = null;
-window.selectedRadicals = window.selectedRadicals || new Set();
-// alias for legacy code
-let selectedRadicals = window.selectedRadicals;
+let selectedRadicals = new Set();
