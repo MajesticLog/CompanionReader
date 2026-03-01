@@ -158,12 +158,12 @@ h2 {
 .theme-dot {
   width: 16px;
   height: 16px;
-  min-width: 16px;   /* prevent flex from squashing */
+  min-width: 16px;
+  padding: 0;          /* override global button padding that was making them oval */
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
   transition: transform 0.12s ease, border-color 0.12s ease;
-  /* background set per-dot below */
 }
 .theme-dot:hover  { transform: scale(1.25); }
 .theme-dot.active { border-color: var(--ink); }
