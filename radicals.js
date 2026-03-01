@@ -1,6 +1,6 @@
 /* =========================
    RADICAL / COMPONENT SEARCH (element2kanji.json)
-   - Loads local data/element2kanji.json
+   - Loads local element2kanji.json
    - Click kanji candidates to build multi-kanji query
    - Jisho word suggestions for current query
 ========================= */
@@ -10,7 +10,7 @@ const WORKER_WORDS_R = (window.TSUNDOKU_CONFIG && window.TSUNDOKU_CONFIG.workerW
 let element2kanji = null;
 let elementIndexLoadError = null;
 
-// IMPORTANT: Put file at /data/element2kanji.json (repo root /data folder)
+// IMPORTANT: Put file at /element2kanji.json (repo root /data folder)
 async function loadElementIndex() {
   if (element2kanji) return element2kanji;
   if (elementIndexLoadError) throw elementIndexLoadError;
@@ -130,8 +130,8 @@ async function searchByRadicals() {
     idx = await loadElementIndex();
   } catch (e) {
     if (cand) cand.innerHTML =
-      `<p class="status-msg">⚠️ Could not load <code>data/element2kanji.json</code>.<br>
-      Ensure it exists at <code>/data/element2kanji.json</code> in your repo.</p>`;
+      `<p class="status-msg">⚠️ Could not load <code>element2kanji.json</code>.<br>
+      Ensure it exists at <code>/element2kanji.json</code> in your repo.</p>`;
     return;
   }
 
@@ -186,7 +186,7 @@ async function radicalSuggest() {
 
   box.innerHTML = '<p class="status-msg">Suggestions…</p>';
   try {
-    const r = await fetch(JISHO_API_R + encodeURIComponent(q));
+    const r = await fetch(workerUrlR(q));
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     const entries = (data.data || []).slice(0, 6);

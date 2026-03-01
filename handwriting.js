@@ -23,6 +23,8 @@ function hwForceCanvasSize(c){
    - Builds a multi-kanji query + suggests words via Jisho
 ========================= */
 
+const hwCanvases = [];
+
 const HW_ENDPOINT = (window.TSUNDOKU_CONFIG && window.TSUNDOKU_CONFIG.handwriteEndpoint) || "";
 const WORKER_WORDS_HW = (window.TSUNDOKU_CONFIG && window.TSUNDOKU_CONFIG.workerWordsEndpoint) || "https://minireader.zoe-caudron.workers.dev/";
 
@@ -49,6 +51,7 @@ function hwInit(){
     const slot = +k;
     const st = hw[slot];
     st.canvas = document.getElementById(st.canvasId);
+    if (st.canvas && !hwCanvases.includes(st.canvas)) hwCanvases.push(st.canvas);
     if (!st.canvas) return;
     st.ctx = st.canvas.getContext("2d");
     st.drawing = false;
@@ -82,6 +85,7 @@ function hwInit(){
 }
 
 function hwResizeAll(){
+  if (!hwCanvases.length) return;
   hwCanvases.forEach(hwResizeCanvas);
   // redraw grid after resize
   hwCanvases.forEach(c=>{ try{ hwDrawGrid(c); }catch(e){} });

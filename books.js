@@ -191,6 +191,41 @@ function exportCSV(){
   a.click();
 }
 
+
+// =========================
+// Add vocab from Lookup to a book
+// Called from lookup.js (inline onclick)
+// =========================
+function addToBook(word, reading, meaning, selectId) {
+  const sel = document.getElementById(selectId);
+  const bookId = sel && sel.value;
+  if (!bookId) {
+    alert('Create a book first in the Books tab.');
+    return;
+  }
+  const book = (window.books || []).find(b => b.id === bookId);
+  if (!book) return;
+
+  book.vocab = book.vocab || [];
+  const exists = book.vocab.some(v => v.word === word);
+  if (exists) { showToast('Already in list!'); return; }
+
+  book.words.push({ word, reading, meaning, added: Date.now() });
+  saveBooks();
+  // refresh UI if viewing that book
+  if (typeof renderBookList === "function") renderBookList();
+  if (typeof renderBookDetail === "function") renderBookDetail();
+  showToast(`Added ${word} to "${book.title}"`);
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink,#1a1410);color:var(--paper,#f5f0e8);padding:10px 16px;border:1.5px solid var(--border,#c8b89a);border-radius:25px;font-family:inherit;font-size:0.95rem;z-index:9999;';
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2200);
+}
+
 function escapeHTML(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 window.addBook = addBook;
@@ -199,3 +234,5 @@ window.renderBookDetail = renderBookDetail;
 window.removeWord = removeWord;
 window.deleteBook = deleteBook;
 window.exportCSV = exportCSV;
+window.addToBook = addToBook;
+window.showToast = window.showToast || showToast;

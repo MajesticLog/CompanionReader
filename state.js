@@ -13,4 +13,6 @@ window.TSUNDOKU_CONFIG = {
 let books = JSON.parse(localStorage.getItem('rdbooks') || '[]');
 window.books = books;
 let activeBook = null;
-let selectedRadicals = new Set();
+window.selectedRadicals = window.selectedRadicals || new Set();
+// alias for legacy code
+let selectedRadicals = window.selectedRadicals;
