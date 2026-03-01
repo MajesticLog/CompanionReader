@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background transparent -->
+  
+  <!-- Plum blossom -->
+  <path d="M32 12
+       C38 8, 46 14, 42 22
+       C50 24, 50 36, 42 38
+       C46 46, 38 52, 32 48
+       C26 52, 18 46, 22 38
+       C14 36, 14 24, 22 22
+       C18 14, 26 8, 32 12 Z" fill="#AF6384"></path>
+
+  <!-- Heart -->
+  <path d="M32 36
+       C30 32, 24 32, 24 38
+       C24 42, 32 48, 32 48
+       C32 48, 40 42, 40 38
+       C40 32, 34 32, 32 36 Z" fill="#ffffff"></path>
+</svg>
