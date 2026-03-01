@@ -113,15 +113,25 @@ export default {
 };
 
 // ── Normalise Jotoba → Jisho shape ─────────────────────────────────────────
-// Jotoba pos can be: string | object {Tag: value} | array of those — flatten to strings
+// Jotoba pos can be any of:
+//   string               e.g. "Noun"
+//   string[]             e.g. ["Noun", "No-adjective"]   ← nested array
+//   {Tag: value}         e.g. {Noun: null}
+//   Array of the above   e.g. [{Noun: null}, "Adverb"]
+// Flatten everything to a clean string array.
 function posToStrings(pos) {
   if (!pos) return [];
-  const items = Array.isArray(pos) ? pos : [pos];
-  return items.map(p => {
-    if (typeof p === 'string') return p;
-    if (typeof p === 'object' && p !== null) return Object.keys(p)[0] || '';
-    return String(p);
-  }).filter(Boolean);
+  // Recursively flatten one level
+  const flatten = (p) => {
+    if (typeof p === 'string')  return p ? [p] : [];
+    if (Array.isArray(p))       return p.flatMap(flatten);   // handles string[] inside
+    if (p && typeof p === 'object') {
+      const key = Object.keys(p)[0];
+      return key ? [key] : [];
+    }
+    return [];
+  };
+  return flatten(pos).filter(Boolean);
 }
 
 function normaliseJotoba(words) {
