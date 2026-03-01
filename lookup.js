@@ -1,71 +1,117 @@
 /* =========================
-   LOOKUP (via Worker proxy to avoid CORS)
+   LOOKUP
 ========================= */
 
-const WORKER_WORDS = (window.TSUNDOKU_CONFIG && window.TSUNDOKU_CONFIG.workerWordsEndpoint)
-  || "https://minireader.zoe-caudron.workers.dev/";
-
-function workerUrl(keyword){
-  const u = new URL(WORKER_WORDS);
-  u.searchParams.set("keyword", keyword);
-  return u.toString();
-}
+const JISHO_API = (window.TSUNDOKU_CONFIG && window.TSUNDOKU_CONFIG.jishoApi)
+  || "https://jisho.org/api/v1/search/words?keyword=";
 
 document.getElementById('search-input')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') lookupWord();
 });
 
-async function lookupWord() {
-  const q = (document.getElementById('search-input')?.value || '').trim();
+async function lookupWord(queryOverride) {
+  const q = (queryOverride ?? document.getElementById('search-input')?.value ?? '').trim();
   if (!q) return;
+
   const res = document.getElementById('results');
-  if (!res) return;
-  res.innerHTML = '<p class="status-msg">Searching…</p>';
+  if (res) res.innerHTML = '<p class="status-msg">Searching…</p>';
 
   try {
-    const r = await fetch(workerUrl(q), { method: "GET" });
-    if (!r.ok) throw new Error("HTTP " + r.status);
+    const r = await fetch(JISHO_API + encodeURIComponent(q));
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     renderResults(data.data || []);
   } catch (e) {
-    res.innerHTML = `<p class="status-msg">⚠️ Could not reach dictionary. Try searching directly: <a href="https://jisho.org/search/${encodeURIComponent(q)}" target="_blank" style="color:var(--red)">jisho.org ↗</a></p>`;
-    console.error(e);
+    if (res) {
+      res.innerHTML =
+        `<p class="status-msg">⚠️ Could not reach Jisho. Try: ` +
+        `<a href="https://jisho.org/search/${encodeURIComponent(q)}" target="_blank" rel="noreferrer"
+           style="color:var(--accent-stroke)">jisho.org ↗</a></p>`;
+    }
   }
 }
 
 function renderResults(entries) {
   const res = document.getElementById('results');
   if (!res) return;
-  if (!entries.length) { res.innerHTML = '<p class="status-msg">No results found.</p>'; return; }
+
+  if (!entries.length) {
+    res.innerHTML = '<p class="status-msg">No results found.</p>';
+    return;
+  }
+
   res.innerHTML = '';
   entries.slice(0, 8).forEach(entry => {
-    const word = entry.japanese?.[0]?.word || entry.japanese?.[0]?.reading || '';
-    const reading = entry.japanese?.[0]?.reading || '';
-    const meanings = entry.senses?.[0]?.english_definitions?.join('; ') || '';
-    const tags = [...(entry.senses?.[0]?.parts_of_speech || [])].slice(0,2).join(', ');
-    const jlpt = entry.jlpt?.[0] || '';
+    const word     = entry.japanese[0]?.word || entry.japanese[0]?.reading || '';
+    const reading  = entry.japanese[0]?.reading || '';
+    const meanings = entry.senses[0]?.english_definitions?.join('; ') || '';
+    const tags     = [...(entry.senses[0]?.parts_of_speech || [])].slice(0,2).join(', ');
+    const jlpt     = entry.jlpt?.[0] || '';
+    const sid      = sanitize(word);
+
+    // Options: shelf entries (Books tab) + legacy word-list books
+    const shelfOpts = (typeof shelfBookOptions === 'function') ? shelfBookOptions() : '';
+    const oldOpts   = (typeof books !== 'undefined' && books.length)
+      ? books.map(b => `<option value="${b.id}">${escapeHtml(b.title)}</option>`).join('')
+      : '';
+    const allOpts   = shelfOpts || oldOpts || '<option disabled>No books yet</option>';
 
     const div = document.createElement('div');
     div.className = 'result-entry';
     div.innerHTML = `
       <div class="word-header">
-        <span class="kanji-large">${word}</span>
-        <span class="reading">${word !== reading ? reading : ''}</span>
-        ${jlpt ? `<span class="jlpt-badge">${jlpt.toUpperCase()}</span>` : ''}
+        <span class="kanji-large">${escapeHtml(word)}</span>
+        <span class="reading">${word !== reading ? escapeHtml(reading) : ''}</span>
+        ${jlpt ? `<span class="jlpt-badge">${escapeHtml(jlpt.toUpperCase())}</span>` : ''}
       </div>
-      <div class="meanings">${meanings}</div>
-      ${tags ? `<div class="tags">${tags}</div>` : ''}
+      <div class="meanings">${escapeHtml(meanings)}</div>
+      ${tags ? `<div class="tags">${escapeHtml(tags)}</div>` : ''}
       <div class="add-btn">
-        <select id="bk-${sanitize(word)}" style="max-width:160px">
-          ${(window.books||[]).map(b => `<option value="${b.id}">${b.title}</option>`).join('')}
-          ${(window.books||[]).length === 0 ? '<option disabled>No books yet</option>' : ''}
+        <select class="lookup-book-select" id="bk-${sid}" style="max-width:200px">
+          ${allOpts}
         </select>
-        <button class="btn btn-sm" type="button" onclick='addToBook(${JSON.stringify(word)}, ${JSON.stringify(reading)}, ${JSON.stringify(meanings)}, "bk-${sanitize(word)}")'>+ Add to List</button>
+        <button class="btn btn-sm"
+          onclick='addToSelectedBook(${JSON.stringify(word)}, ${JSON.stringify(reading)}, ${JSON.stringify(meanings)}, "bk-${sid}")'>
+          + Add to book
+        </button>
       </div>`;
     res.appendChild(div);
   });
 }
 
-function sanitize(s) { return (s||'').replace(/[^a-zA-Z0-9]/g, '_').slice(0,16); }
+function addToSelectedBook(word, reading, meaning, selectId) {
+  const sel = document.getElementById(selectId);
+  if (!sel || !sel.value) return;
+  const bookId = sel.value;
 
-window.lookupWord = lookupWord;
+  let added = false;
+  if (bookId.startsWith('sb') && typeof addWordToShelf === 'function') {
+    added = addWordToShelf(word, reading, meaning, bookId);
+  } else if (typeof addToBook === 'function') {
+    addToBook(word, reading, meaning, selectId);
+    added = true;
+  }
+
+  if (added === false) {
+    // already exists — flash the select
+    sel.style.outline = '2px solid var(--accent-stroke)';
+    setTimeout(() => sel.style.outline = '', 1200);
+    return;
+  }
+
+  // Visual feedback
+  const btn = sel.nextElementSibling;
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Added';
+    btn.style.borderColor = 'var(--accent2-stroke)';
+    setTimeout(() => { btn.textContent = orig; btn.style.borderColor = ''; }, 1400);
+  }
+}
+
+function sanitize(s) { return String(s || '').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 16); }
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g,
+    m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+}

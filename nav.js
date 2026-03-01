@@ -2,27 +2,26 @@
    NAV
 ========================= */
 function showPanel(id, btn) {
-  // panels
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   const panel = document.getElementById('panel-' + id);
   if (panel) panel.classList.add('active');
 
-  // nav active state
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   if (btn) {
     btn.classList.add('active');
   } else {
-    const map = { lookup: 0, books: 1, writing: 2, radicals: 3, flashcards: 4 };
+    const map = { lookup: 0, bookshelf: 1, lists: 2, writing: 3, radicals: 4, flashcards: 5 };
     const i = map[id];
     const btns = document.querySelectorAll('nav button');
     if (Number.isInteger(i) && btns[i]) btns[i].classList.add('active');
   }
 
-  // panel hooks (guarded so one failure doesn't kill the app)
-  try { if (id === 'books' && typeof renderBookList === 'function') { renderBookList(); if (typeof renderBookDetail === 'function') renderBookDetail(); } } catch(e) { console.error(e); }
+  try { if (id === 'bookshelf' && typeof renderShelf === 'function') { renderShelf(); renderShelfDetail(); } } catch(e) { console.error(e); }
+  try { if (id === 'lists' && typeof renderBookList === 'function') renderBookList(); } catch(e) { console.error(e); }
   try { if (id === 'radicals' && typeof renderRadicals === 'function') renderRadicals(); } catch(e) { console.error(e); }
-  try { if (id === 'writing' && typeof hwResizeAll === 'function') setTimeout(hwResizeAll, 0); } catch(e) { console.error(e); }
-
+  try { if (id === 'writing' && typeof hwResizeAll === 'function') {
+    requestAnimationFrame(() => requestAnimationFrame(hwResizeAll));
+  } } catch(e) { console.error(e); }
   try {
     if (id === 'flashcards') {
       const setup = document.getElementById('fc-setup');
@@ -37,16 +36,3 @@ function showPanel(id, btn) {
 }
 
 window.showPanel = showPanel;
-
-
-function initNav(){
-  document.querySelectorAll('nav button').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const onclick = btn.getAttribute('onclick') || '';
-      // If inline onclick exists, it will still run; but we prefer data-panel if present.
-      const m = onclick.match(/showPanel\('([a-z]+)'/);
-      if (m) showPanel(m[1], btn);
-    });
-  });
-}
-document.addEventListener('DOMContentLoaded', initNav);

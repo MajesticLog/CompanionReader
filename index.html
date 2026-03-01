@@ -1,277 +1,323 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>読書手帳 — Japanese Reading Companion</title>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>積読フレンド ♥ </title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link href="https://fonts.gstatic.com" rel="preconnect" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300;400;500;600&family=Kosugi+Maru&display=swap" rel="stylesheet"/>
+<link href="styles.css" rel="stylesheet"/>
 </head>
-
 <body>
-
-<header>
-  <div>
-    <h1>読書手帳</h1>
-  </div>
-
-  <div class="theme-dots" aria-label="Theme">
-    <button class="theme-dot flowers" data-theme="flowers" title="Flowers"></button>
-    <button class="theme-dot joyful"  data-theme="joyful"  title="Joyful"></button>
-    <button class="theme-dot plum"    data-theme="plum"    title="Plum"></button>
-  </div>
-
-  <span>Japanese Reading Companion</span>
+<header class="topbar">
+<div class="topbar-left">
+<h1>積読フレンド ♥<span class="heart">♡</span></h1>
+</div>
+<div class="topbar-right">
+<span class="tagline">Japanese Reading Companion</span>
+<div aria-label="Theme" class="theme-dots">
+<button aria-label="Flowers theme" class="theme-dot" data-theme="flowers" style="--dot:#CAC4F6" title="Flowers" type="button"></button>
+<button aria-label="Joyful theme" class="theme-dot" data-theme="joyful" style="--dot:#ffa5c8" title="Joyful" type="button"></button>
+<button aria-label="Plum theme" class="theme-dot" data-theme="plum" style="--dot:#AF6384" title="Plum" type="button"></button>
+</div>
+</div>
 </header>
-
 <nav>
-  <button class="active" onclick="showPanel('lookup', this)">🔍 Lookup</button>
-  <button onclick="showPanel('books', this)">📖 Books</button>
-  <button onclick="showPanel('writing', this)">✍️ Handwriting</button>
-  <button onclick="showPanel('radicals', this)">部首 Radicals</button>
-  <button onclick="showPanel('flashcards', this)">🃏 Flashcards</button>
+<button class="active" onclick="showPanel('lookup', this)">🔍 Lookup</button>
+<button onclick="showPanel('bookshelf', this)">📖 Books</button>
+<button onclick="showPanel('lists', this)">📚 Word Lists</button>
+<button onclick="showPanel('writing', this)">✍️ Handwrite</button>
+<button onclick="showPanel('radicals', this)">部首 Radicals</button>
+<button onclick="showPanel('flashcards', this)">🃏 Flashcards</button>
 </nav>
-
 <main>
+<!-- ── LOOKUP PANEL ── -->
+<div class="panel active" id="panel-lookup">
+<div class="lookup-grid">
+<div class="card">
+<h2>Word Search — 単語検索</h2>
+<div class="search-bar">
+<input autocomplete="off" id="search-input" placeholder="Enter kanji, kana, or romaji…" type="text"/>
+<button class="btn" onclick="lookupWord()">Search</button>
+</div>
+<div id="results"><p class="status-msg">Search for any Japanese word above.</p></div>
+</div>
+<div class="card">
+<h2>Quick Notes — メモ</h2>
+<textarea id="quick-notes" placeholder="Jot down notes, sentences, context…" style="width:100%;min-height:200px;font-family:'Kosugi Maru',sans-serif;font-size:0.95rem;line-height:1.9;padding:12px;outline:none;resize:vertical;"></textarea>
+</div>
+</div>
+</div>
+<!-- ── WORD LISTS PANEL ── -->
+<div class="panel" id="panel-lists">
+<div class="lists-layout">
+<div>
+<div class="card" style="margin-bottom:0">
+<h2>Books — 本</h2>
+<div class="new-book-form">
+<input id="new-book-input" onkeydown="if(event.key==='Enter')addBook()" placeholder="Book title…" type="text"/>
+<button class="btn btn-sm" onclick="addBook()">+</button>
+</div>
+<div class="book-list" id="book-list"></div>
+</div>
+</div>
+<div class="card">
+<h2 id="list-title">Word List — 単語リスト</h2>
+<div id="word-list-content"><p class="empty-state">Select or create a book to see its word list.</p></div>
+</div>
+</div>
+</div>
+<!-- ── HANDWRITE PANEL ── -->
+<div class="panel" id="panel-writing">
+<div class="writing-layout writing-two">
+<div class="card canvas-wrap">
+<h2>Handwrite Kanji — 手書き検索 (1)</h2>
+<canvas height="350" id="writing-canvas-1" width="420"></canvas>
+<div class="canvas-controls">
+<div class="brush-row">
+<span>Size</span>
+<input id="brush-size" max="40" min="1" type="range" value="10"/>
+<input id="brush-color" type="color" value="#1a1410"/>
+</div>
+<button class="btn btn-sm btn-outline" onclick="hwClear(1)">Clear</button>
+<button class="btn btn-sm" onclick="hwRecognize(1)">Recognize</button>
+</div>
+<div class="candidate-row" id="hw-candidates-1"></div>
+<p class="status-msg" id="hw-status-1">Draw a kanji, then click Recognize.</p>
+</div>
+<div class="card canvas-wrap">
+<h2>Handwrite Kanji — 手書き検索 (2)</h2>
+<canvas height="350" id="writing-canvas-2" width="420"></canvas>
+<div class="canvas-controls">
+<div class="brush-row">
+<span>Size</span>
+<!-- shares brush controls -->
+</div>
+<button class="btn btn-sm btn-outline" onclick="hwClear(2)">Clear</button>
+<button class="btn btn-sm" onclick="hwRecognize(2)">Recognize</button>
+</div>
+<div class="candidate-row" id="hw-candidates-2"></div>
+<p class="status-msg" id="hw-status-2">You can write a second kanji to build multi-kanji words.</p>
+</div>
+<div class="card hw-build">
+<h2>Build Word — 組み合わせ</h2>
+<p class="radical-info">Click a candidate above to add it. You can edit the field manually too.</p>
+<div class="search-bar">
+<input autocomplete="off" id="hw-query" placeholder="例: 日本 / 猫 / 一" type="text"/>
+<button class="btn" onclick="hwLookup()">Search</button>
+<button class="btn btn-outline" onclick="hwClearQuery()">Clear</button>
+</div>
+<div id="hw-word-suggestions"><p class="status-msg">Write kanji (or type) to see word suggestions.</p></div>
+</div>
+</div>
+</div>
+<!-- ── RADICALS PANEL ── -->
+<div class="panel" id="panel-radicals">
+<div class="radical-layout">
+<div class="card">
+<h2>Radical Picker — 部首</h2>
+<div class="selected-radicals" id="selected-radicals-display">—</div><p class="radical-info">Select one or more radicals to find kanji. Results come from Jisho.</p>
+<div class="stroke-filter" id="stroke-filter"></div>
+<div class="radical-grid" id="radical-grid"></div>
+<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn" onclick="searchByRadicals()" type="button">Get Kanji</button><button class="btn btn-outline" onclick="clearRadicals()" type="button">Clear selection</button></div></div>
+<div class="card"><h2>Build Word — 組み合わせ</h2><p class="radical-info">1) Select radicals/components. 2) Click “Get Kanji”. 3) Click kanji to build a word. 4) Search.</p><div class="search-bar"><input autocomplete="off" id="radical-query" placeholder="例: 日本 / 猫 / 一" type="text"/><button class="btn" onclick="radicalSearchWord()" type="button">Search</button><button class="btn btn-outline" onclick="radicalClearAll()" type="button">Clear</button></div><div id="radical-word-suggestions"><p class="status-msg">Build a query to see suggestions.</p></div><div id="radical-kanji-candidates"><p class="status-msg">Select radicals and click “Get Kanji”.</p></div></div></div>
+</div>
 
-  <!-- LOOKUP PANEL -->
-  <section class="panel active" id="panel-lookup">
-    <div class="lookup-grid">
-      <div class="card">
-        <h2>Word Search — 単語検索</h2>
-        <div class="search-bar">
-          <input id="search-input" type="text" placeholder="Enter kanji, kana, or romaji…" autocomplete="off">
-          <button class="btn" type="button" onclick="lookupWord()">Search</button>
-        </div>
-        <div id="results"><p class="status-msg">Search for any Japanese word above.</p></div>
-      </div>
-      <div class="card">
-        <h2>Quick Notes — メモ</h2>
-        <textarea id="quick-notes" class="notes-textarea" placeholder="Jot down notes, sentences, context…"></textarea>
-      </div>
+<!-- ── BOOKSHELF PANEL ── -->
+<div class="panel" id="panel-bookshelf">
+
+  <!-- Add book bar -->
+  <div class="shelf-add-bar">
+    <input id="shelf-quick-title" type="text" placeholder="Book title… (quick add)"
+      onkeydown="if(event.key==='Enter')quickAddShelfBook()" autocomplete="off"/>
+    <button class="btn btn-sm" onclick="quickAddShelfBook()">+ Quick add</button>
+    <button class="btn btn-sm btn-outline" onclick="openAddShelfModal()">＋ Full details</button>
+  </div>
+
+  <!-- Two-column layout -->
+  <div class="shelf-layout">
+
+    <!-- Left: shelf list -->
+    <div class="shelf-sidebar">
+      <div id="shelf-list"></div>
     </div>
-  </section>
 
-  <!-- BOOKS PANEL -->
-  <section class="panel" id="panel-books">
-    <div class="lists-layout">
-      <div>
-        <div class="card" style="margin-bottom:0">
-          <h2>Books — 本</h2>
-          <div class="new-book-form">
-            <input id="new-book-input" type="text" placeholder="Book title…" onkeydown="if(event.key==='Enter')addBook()">
-            <button class="btn btn-sm" type="button" onclick="addBook()">+</button>
-          </div>
-          <div class="book-list" id="book-list"></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2 id="book-detail-title">Book — 詳細</h2>
-
-        <div id="book-meta-controls" style="display:none;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0 14px">
-          <div class="meta-chip">
-            <label for="book-status" class="meta-label">Status</label>
-            <select id="book-status" class="meta-select">
-              <option value="reading">Reading</option>
-              <option value="read">Read</option>
-            </select>
-          </div>
-
-          <div class="meta-chip">
-            <span class="meta-label">Rating</span>
-            <div id="book-rating" class="star-row" aria-label="Rating"></div>
-          </div>
-
-          <button class="btn btn-sm btn-outline" type="button" onclick="deleteBook()">Delete Book</button>
-        </div>
-
-        <div id="book-detail-content"><p class="empty-state">Select or create a book to see details.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- HANDWRITING PANEL -->
-  <section class="panel" id="panel-writing">
-    <div class="writing-layout">
-      <div class="card canvas-wrap">
-        <h2>Handwriting — 手書き</h2>
-
-        <div class="hw-row">
-          <div class="hw-box">
-            <canvas id="writing-canvas-1" width="420" height="350"></canvas>
-            <div class="canvas-controls">
-              <button class="btn btn-sm btn-outline" type="button" onclick="hwClear(1)">Clear</button>
-              <button class="btn btn-sm" type="button" onclick="hwRecognize(1)">Recognize</button>
-            </div>
-            <div id="hw-status-1" class="status-msg">Draw a kanji, then click Recognize.</div>
-            <div id="hw-candidates-1" class="candidate-row"></div>
-          </div>
-
-          <div class="hw-box">
-            <canvas id="writing-canvas-2" width="420" height="350"></canvas>
-            <div class="canvas-controls">
-              <button class="btn btn-sm btn-outline" type="button" onclick="hwClear(2)">Clear</button>
-              <button class="btn btn-sm" type="button" onclick="hwRecognize(2)">Recognize</button>
-            </div>
-            <div id="hw-status-2" class="status-msg">Draw a kanji, then click Recognize.</div>
-            <div id="hw-candidates-2" class="candidate-row"></div>
-          </div>
-        </div>
-
-        <div class="search-bar" style="margin-top:14px">
-          <input id="hw-query" type="text" placeholder="Click candidates to build a word…" autocomplete="off">
-          <button class="btn" type="button" onclick="hwSearchWord()">Search</button>
-          <button class="btn btn-outline" type="button" onclick="hwClearQuery()">Clear</button>
-        </div>
-
-        <div id="hw-word-suggestions"><p class="status-msg">Build a query to see suggestions.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- RADICALS PANEL -->
-  <section class="panel" id="panel-radicals">
-    <div class="radical-layout">
-      <div class="card">
-        <h2>Radical Picker — 部首</h2>
-        <p class="radical-info">Select one or more parts, then click “Get Kanji”. Click candidate kanji to build a word.</p>
-
-        <div id="selected-radicals-display" class="selected-radicals">—</div>
-        <div class="stroke-filter" id="stroke-filter"></div>
-        <div class="radical-grid" id="radical-grid"></div>
-
-        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-          <button class="btn" type="button" onclick="searchByRadicals()">Get Kanji</button>
-          <button class="btn btn-outline" type="button" onclick="clearRadicals()">Clear</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Build Word — 組み合わせ</h2>
-
-        <div class="search-bar">
-          <input id="radical-query" type="text" placeholder="Click kanji candidates to build…" autocomplete="off">
-          <button class="btn" type="button" onclick="radicalSearchWord()">Search</button>
-          <button class="btn btn-outline" type="button" onclick="radicalClearAll()">Clear</button>
-        </div>
-
-        <div id="radical-kanji-candidates"><p class="status-msg">Select radicals and click “Get Kanji”.</p></div>
-        <div id="radical-word-suggestions"><p class="status-msg">Build a query to see suggestions.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FLASHCARDS PANEL -->
-  <section class="panel" id="panel-flashcards">
-    <div class="fc-setup" id="fc-setup">
-      <div class="card">
-        <h2>Study Session — 勉強</h2>
-        <p class="status-msg">Choose books and start.</p>
-        <div class="fc-book-grid" id="fc-book-grid"></div>
-
-        <div class="fc-options">
-          <div class="fc-option-row">
-            <label>Show</label>
-            <select id="fc-mode">
-              <option value="kanji-to-meaning">Kanji → Meaning</option>
-              <option value="meaning-to-kanji">Meaning → Kanji</option>
-              <option value="reading-to-meaning">Reading → Meaning</option>
-            </select>
-          </div>
-          <div class="fc-option-row">
-            <label>Order</label>
-            <select id="fc-order">
-              <option value="random">Random</option>
-              <option value="sequential">Sequential</option>
-              <option value="hard-first">Hard first</option>
-            </select>
-          </div>
-          <div class="fc-option-row">
-            <label>Limit</label>
-            <select id="fc-limit">
-              <option value="0">All cards</option>
-              <option value="10">10 cards</option>
-              <option value="20">20 cards</option>
-              <option value="30">30 cards</option>
-              <option value="50">50 cards</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div style="text-align:center">
-        <button class="btn" style="padding:12px 36px;font-size:1.1rem;letter-spacing:0.1em" type="button" onclick="startFlashcards()">Start Study 開始</button>
+    <!-- Right: detail pane -->
+    <div class="shelf-detail card" id="shelf-detail">
+      <div class="shelf-empty-detail">
+        <p class="empty-state">Select a book to see details,<br>or add one above.</p>
       </div>
     </div>
 
-    <div class="fc-study" id="fc-study">
-      <div class="fc-progress-bar-wrap">
-        <span id="fc-count">0 / 0</span>
-        <div class="fc-progress-bar"><div class="fc-progress-fill" id="fc-progress-fill" style="width:0%"></div></div>
-        <button class="btn btn-sm btn-outline" type="button" onclick="endSession()">End</button>
-      </div>
+  </div>
+</div>
 
-      <div class="fc-session-stats">
-        <div class="fc-stat"><span class="val" id="stat-again">0</span>Again</div>
-        <div class="fc-stat"><span class="val" id="stat-hard">0</span>Hard</div>
-        <div class="fc-stat"><span class="val" id="stat-good">0</span>Good</div>
-        <div class="fc-stat"><span class="val" id="stat-easy">0</span>Easy</div>
-      </div>
+<!-- ── BOOKSHELF MODAL ── -->
+<div class="modal-overlay" id="shelf-modal">
+  <div class="modal">
+    <h2 id="shelf-modal-title-label">Add Book</h2>
+    <input type="hidden" id="shelf-form-id"/>
 
-      <div class="fc-card-scene" id="fc-card-scene" onclick="flipCard()">
-        <div class="fc-card-inner" id="fc-card-inner">
-          <div class="fc-card-face fc-front">
-            <div class="fc-hint" id="fc-front-hint">KANJI</div>
-            <div class="fc-word" id="fc-front-word">—</div>
-            <div class="fc-reading-front" id="fc-front-sub"></div>
-            <div class="fc-tap-hint">tap to reveal</div>
-          </div>
-          <div class="fc-card-face fc-back">
-            <div class="fc-hint">ANSWER</div>
-            <div class="fc-word-back" id="fc-back-word"></div>
-            <div class="fc-meaning-back" id="fc-back-meaning"></div>
-            <div class="fc-reading-back" id="fc-back-reading"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="fc-ratings" id="fc-ratings">
-        <button class="fc-rating-btn fc-btn-again" type="button" onclick="rateCard('again')"><span class="label">Again</span><span class="sub">もう一度</span></button>
-        <button class="fc-rating-btn fc-btn-hard" type="button" onclick="rateCard('hard')"><span class="label">Hard</span><span class="sub">難しい</span></button>
-        <button class="fc-rating-btn fc-btn-good" type="button" onclick="rateCard('good')"><span class="label">Good</span><span class="sub">わかった</span></button>
-        <button class="fc-rating-btn fc-btn-easy" type="button" onclick="rateCard('easy')"><span class="label">Easy</span><span class="sub">簡単</span></button>
-      </div>
-
-      <div class="fc-shortcuts">Space / Enter = flip &nbsp;|&nbsp; 1 Again &nbsp; 2 Hard &nbsp; 3 Good &nbsp; 4 Easy</div>
+    <div class="modal-section">
+      <label>Title *</label>
+      <input class="modal-input" id="shelf-form-title" type="text" placeholder="e.g. コンビニ人間" autocomplete="off"/>
     </div>
 
-    <div class="fc-results" id="fc-results">
-      <div class="fc-results-title">Session Complete 完了</div>
-      <div class="fc-results-grid" id="fc-results-grid"></div>
-      <div class="fc-again-list" id="fc-again-list" style="display:none">
-        <h3>Review Again — 要復習</h3>
-        <div id="fc-again-items"></div>
+    <div class="modal-section">
+      <label>Author</label>
+      <input class="modal-input" id="shelf-form-author" type="text" placeholder="e.g. 村田沙耶香" autocomplete="off"/>
+    </div>
+
+    <div class="shelf-modal-row">
+      <div class="modal-section" style="flex:1">
+        <label>Status</label>
+        <select class="modal-input" id="shelf-form-status">
+          <option value="reading">📖 Reading</option>
+          <option value="finished">✅ Finished</option>
+          <option value="paused">⏸ Paused</option>
+          <option value="wishlist">🌸 Want to read</option>
+        </select>
       </div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
-        <button class="btn" type="button" onclick="restartSession()">Study Again</button>
-        <button class="btn btn-outline" type="button" onclick="backToSetup()">Change Settings</button>
+      <div class="modal-section" style="flex:1">
+        <label>Date finished</label>
+        <input class="modal-input" id="shelf-form-date" type="date"/>
       </div>
     </div>
-  </section>
 
+    <div class="modal-section">
+      <label>Rating</label>
+      <div class="shelf-modal-stars" id="shelf-modal-rating" data-value="0">
+        <span class="star" data-v="1">★</span>
+        <span class="star" data-v="2">★</span>
+        <span class="star" data-v="3">★</span>
+        <span class="star" data-v="4">★</span>
+        <span class="star" data-v="5">★</span>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label>My Notes</label>
+      <textarea class="modal-input" id="shelf-form-notes" rows="5"
+        placeholder="Thoughts, impressions, memorable quotes…" style="border-radius:var(--radius-box);resize:vertical;min-height:100px;"></textarea>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-sm btn-outline" onclick="closeShelfModal()">Cancel</button>
+      <button class="btn btn-sm" onclick="saveShelfModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="panel" id="panel-flashcards">
+<div class="fc-setup" id="fc-setup">
+<div class="card">
+<h2>Study Session — 勉強</h2>
+<p style="font-size:0.9rem;color:var(--muted);margin-bottom:16px;font-style:italic">
+          Choose which book(s) to study, then configure your session.
+        </p>
+<p style="font-size:0.85rem;color:var(--muted);margin-bottom:8px;letter-spacing:0.05em">BOOKS</p>
+<div class="fc-book-grid" id="fc-book-grid"></div>
+<div class="fc-options">
+<div class="fc-option-row">
+<label>Show</label>
+<select id="fc-mode">
+<option value="kanji-to-meaning">Kanji → Meaning</option>
+<option value="meaning-to-kanji">Meaning → Kanji</option>
+<option value="reading-to-meaning">Reading → Meaning</option>
+</select>
+</div>
+<div class="fc-option-row">
+<label>Order</label>
+<select id="fc-order">
+<option value="random">Random</option>
+<option value="sequential">Sequential</option>
+<option value="hard-first">Hard first</option>
+</select>
+</div>
+<div class="fc-option-row">
+<label>Limit</label>
+<select id="fc-limit">
+<option value="0">All cards</option>
+<option value="10">10 cards</option>
+<option value="20">20 cards</option>
+<option value="30">30 cards</option>
+<option value="50">50 cards</option>
+</select>
+</div>
+</div>
+</div>
+<div style="text-align:center">
+<button class="btn" onclick="startFlashcards()" style="padding:12px 36px;font-size:1.1rem;letter-spacing:0.1em">Start Study 開始</button>
+</div>
+</div>
+<div class="fc-study" id="fc-study">
+<div class="fc-progress-bar-wrap">
+<span id="fc-count">0 / 0</span>
+<div class="fc-progress-bar"><div class="fc-progress-fill" id="fc-progress-fill" style="width:0%"></div></div>
+<button class="btn btn-sm btn-outline" onclick="endSession()">End</button>
+</div>
+<div class="fc-session-stats">
+<div class="fc-stat"><span class="val" id="stat-again">0</span>Again</div>
+<div class="fc-stat"><span class="val" id="stat-hard">0</span>Hard</div>
+<div class="fc-stat"><span class="val" id="stat-good">0</span>Good</div>
+<div class="fc-stat"><span class="val" id="stat-easy">0</span>Easy</div>
+</div>
+<div class="fc-card-scene" id="fc-card-scene" onclick="flipCard()">
+<div class="fc-card-inner" id="fc-card-inner">
+<div class="fc-card-face fc-front">
+<div class="fc-hint" id="fc-front-hint">KANJI</div>
+<div class="fc-word" id="fc-front-word">—</div>
+<div class="fc-reading-front" id="fc-front-sub"></div>
+<div class="fc-tap-hint">tap to reveal</div>
+</div>
+<div class="fc-card-face fc-back">
+<div class="fc-hint">ANSWER</div>
+<div class="fc-word-back" id="fc-back-word"></div>
+<div class="fc-meaning-back" id="fc-back-meaning"></div>
+<div class="fc-reading-back" id="fc-back-reading"></div>
+</div>
+</div>
+</div>
+<div class="fc-ratings" id="fc-ratings">
+<button class="fc-rating-btn fc-btn-again" onclick="rateCard('again')">
+<span class="label">Again</span><span class="sub">もう一度</span>
+</button>
+<button class="fc-rating-btn fc-btn-hard" onclick="rateCard('hard')">
+<span class="label">Hard</span><span class="sub">難しい</span>
+</button>
+<button class="fc-rating-btn fc-btn-good" onclick="rateCard('good')">
+<span class="label">Good</span><span class="sub">わかった</span>
+</button>
+<button class="fc-rating-btn fc-btn-easy" onclick="rateCard('easy')">
+<span class="label">Easy</span><span class="sub">簡単</span>
+</button>
+</div>
+<div class="fc-shortcuts">Space / Enter = flip  |  1 Again   2 Hard   3 Good   4 Easy</div>
+</div>
+<div class="fc-results" id="fc-results">
+<div class="fc-results-title">Session Complete 完了</div>
+<div class="fc-results-grid" id="fc-results-grid"></div>
+<div class="fc-again-list" id="fc-again-list" style="display:none">
+<h3>Review Again — 要復習</h3>
+<div id="fc-again-items"></div>
+</div>
+<div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+<button class="btn" onclick="restartSession()">Study Again</button>
+<button class="btn btn-outline" onclick="backToSetup()">Change Settings</button>
+</div>
+</div>
+</div>
 </main>
-
-<script src="state.js"></script>
-<script src="nav.js"></script>
-<script src="books.js"></script>
-<script src="lookup.js"></script>
-<script src="handwriting.js"></script>
-<script src="radicals.js"></script>
-<script src="flashcards.js"></script>
-<script src="init.js"></script>
-
-</body>
-</html>
+<script defer="" src="state.js"></script>
+<script defer="" src="nav.js"></script>
+<script defer="" src="lookup.js"></script>
+<script defer="" src="books.js"></script>
+<script defer="" src="bookshelf.js"></script>
+<script defer="" src="handwriting.js"></script>
+<script defer="" src="radicals.js"></script>
+<script defer="" src="flashcards.js"></script>
+<script defer="" src="init.js"></script>
+</body></html>
