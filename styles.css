@@ -1356,15 +1356,15 @@ td.jlpt-cell { white-space: nowrap; }
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.45);
   z-index: 200;
   align-items: center;
   justify-content: center;
 }
 .modal-overlay.open { display: flex; }
 .modal-box {
-  background: var(--card-bg);
-  border: 1.5px solid var(--card-stroke);
+  background: var(--bg);
+  border: var(--stroke-strong) solid var(--border-strong);
   border-radius: var(--radius-box, 12px);
   box-shadow: 0 8px 32px rgba(0,0,0,0.18);
   width: 100%;

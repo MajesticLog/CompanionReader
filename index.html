@@ -30,7 +30,6 @@
 <nav>
 <button class="active" onclick="showPanel('lookup', this)">🔍 Lookup</button>
 <button onclick="showPanel('bookshelf', this)">📖 Books</button>
-<button onclick="showPanel('lists', this)">📚 Word Lists</button>
 <button onclick="showPanel('writing', this)">✍️ Handwrite</button>
 <button onclick="showPanel('radicals', this)">部首 Radicals</button>
 <button onclick="showPanel('flashcards', this)">🃏 Flashcards</button>
@@ -55,22 +54,7 @@
 </div>
 </div>
 <!-- ── WORD LISTS PANEL ── -->
-<div class="panel" id="panel-lists">
-<div class="lists-layout">
-<div class="card" style="padding:16px">
-<h2>Books — 本</h2>
-<div class="new-book-form">
-<input id="new-book-input" onkeydown="if(event.key==='Enter')addBook()" placeholder="Book title…" type="text"/>
-<button class="btn btn-sm" onclick="addBook()">+</button>
-</div>
-<div class="book-list" id="book-list"></div>
-</div>
-<div class="card">
-<h2 id="list-title">Word List — 単語リスト</h2>
-<div id="word-list-content"><p class="empty-state">Select or create a book to see its word list.</p></div>
-</div>
-</div>
-</div>
+
 <!-- ── HANDWRITE PANEL ── -->
 <div class="panel" id="panel-writing">
 <div class="writing-layout writing-two">
@@ -406,6 +390,5 @@
       </div>
     </div>
   </div>
-  <!-- hidden quick-notes for sync.js notes merge -->
   <textarea id="quick-notes" style="display:none"></textarea>
 </body></html>

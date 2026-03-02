@@ -15,15 +15,18 @@ export default {
       return handleHandwrite(request, origin);
     }
 
+    // ── NHK Easy News: article list ───────────────────────────────────────────
     if (url.searchParams.has('nhk')) {
       return handleNhkList(origin);
     }
 
+    // ── NHK Easy News: single article body ───────────────────────────────────
     const nhkUrl = url.searchParams.get('nhk_article');
     if (nhkUrl) {
       return handleNhkArticle(nhkUrl, origin);
     }
 
+    // ── Dictionary ────────────────────────────────────────────────────────────
     const keyword = url.searchParams.get('keyword')?.trim() || '';
     if (!keyword) {
       return json({ error: 'MISSING_KEYWORD', data: [] }, 400, origin);
@@ -33,36 +36,75 @@ export default {
 };
 
 // ── NHK Easy News ─────────────────────────────────────────────────────────────
+// NHK's JSON API endpoints require authentication from Cloudflare Workers.
+// Instead we fetch the HTML homepage and parse article links from the page source.
 
 async function handleNhkList(origin) {
   try {
-    // news-list.json is the correct endpoint — top-list.json does not exist
-    const r = await fetch('https://www3.nhk.or.jp/news/easy/news-list.json', {
-      headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(8000),
+    // Fetch the NHK Easy News homepage HTML
+    const r = await fetch('https://www3.nhk.or.jp/news/easy/', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'ja,en;q=0.9',
+      },
+      signal: AbortSignal.timeout(10000),
     });
-    if (!r.ok) throw new Error('NHK news-list HTTP ' + r.status);
-    const list = await r.json();
+    if (!r.ok) throw new Error('NHK Easy homepage HTTP ' + r.status);
+    const html = await r.text();
 
-    // Structure: [ { "YYYYMMDD": [ {news_id, title, title_with_ruby, news_prearranged_time}, ... ] } ]
+    // NHK Easy article links are in <a href="/news/easy/NEWSID/NEWSID.html"> format
+    // Article titles appear in the adjacent text or in data attributes
     const articles = [];
-    for (const weekObj of (list || [])) {
-      for (const dayArticles of Object.values(weekObj)) {
-        for (const item of (dayArticles || [])) {
-          articles.push({
-            title: item.title_with_ruby ? stripRuby(item.title_with_ruby) : (item.title || ''),
-            date:  (item.news_prearranged_time || '').slice(0, 10),
-            url:   `https://www3.nhk.or.jp/news/easy/${item.news_id}/${item.news_id}.html`,
-            id:    item.news_id,
-          });
-          if (articles.length >= 20) break;
-        }
-        if (articles.length >= 20) break;
-      }
-      if (articles.length >= 20) break;
+    const seenIds = new Set();
+
+    // Pattern: href="/news/easy/{id}/{id}.html" with nearby title text
+    // NHK Easy uses list items like:
+    // <a class="..." href="/news/easy/k10014.../k10014....html"><p class="...">Title text</p></a>
+    const linkRe = /href="(\/news\/easy\/(k\d+)\/\2\.html)"[^>]*>([\s\S]*?)(?=<a |<\/li>|<\/div>)/g;
+    let m;
+    while ((m = linkRe.exec(html)) !== null && articles.length < 20) {
+      const path  = m[1];
+      const id    = m[2];
+      const inner = m[3];
+      if (seenIds.has(id)) continue;
+      seenIds.add(id);
+
+      // Extract readable title — strip tags, decode entities
+      const title = inner
+        .replace(/<ruby[^>]*>(.*?)<\/ruby>/gs, (_, rb) => rb.replace(/<rt[^>]*>.*?<\/rt>/gs,'').replace(/<[^>]+>/g,''))
+        .replace(/<[^>]+>/g, '')
+        .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#\d+;/g,'')
+        .replace(/\s+/g,' ').trim();
+
+      if (!title || title.length < 3) continue;
+
+      articles.push({
+        title,
+        date:  '',
+        url:   'https://www3.nhk.or.jp' + path,
+        id,
+      });
     }
 
-    if (!articles.length) throw new Error('No articles parsed from news-list.json');
+    // Fallback: simpler pattern if above yields nothing
+    if (!articles.length) {
+      const simpleRe = /href="(\/news\/easy\/(k\d+)\/\2\.html)"/g;
+      let sm;
+      while ((sm = simpleRe.exec(html)) !== null && articles.length < 20) {
+        const id = sm[2];
+        if (seenIds.has(id)) continue;
+        seenIds.add(id);
+        articles.push({
+          title: id,
+          date:  '',
+          url:   'https://www3.nhk.or.jp' + sm[1],
+          id,
+        });
+      }
+    }
+
+    if (!articles.length) throw new Error('No article links found in NHK Easy HTML');
     return okJson({ articles }, origin);
   } catch (e) {
     return json({ error: 'NHK_UNAVAILABLE', detail: e.message, articles: [] }, 200, origin);
@@ -75,32 +117,36 @@ async function handleNhkArticle(articleUrl, origin) {
   }
   try {
     const r = await fetch(articleUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(10000),
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html',
+        'Accept-Language': 'ja,en;q=0.9',
+      },
+      signal: AbortSignal.timeout(12000),
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const html = await r.text();
 
-    // Try multiple possible article body selectors NHK has used over the years
+    // Try multiple selectors NHK has used over time
     let body = '';
     const patterns = [
       /id="js-article-body"[^>]*>([\s\S]*?)<\/div>/,
-      /class="article-main__body[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<div/,
-      /class="content--detail-main"[^>]*>([\s\S]*?)<\/div>\s*<div/,
+      /class="article-main__body[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<div|<\/section)/,
+      /class="content--detail-main[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<div|<\/section)/,
+      /<article[^>]*>([\s\S]*?)<\/article>/,
     ];
     for (const pat of patterns) {
       const m = html.match(pat);
       if (m && m[1] && /[\u3040-\u9fff]/.test(m[1])) { body = m[1]; break; }
     }
     if (!body) {
-      // Fallback: gather <p> tags with Japanese text
       const ps = html.match(/<p[^>]*>[\s\S]*?<\/p>/g) || [];
       body = ps.filter(p => /[\u3040-\u9fff]/.test(p)).slice(0, 30).join('\n');
     }
 
-    // NHK wraps ruby text in <rb>; strip the wrapper, keep standard <ruby>/<rt>
+    // Clean up: strip NHK's <rb> wrappers (keep <ruby>/<rt> for furigana)
     body = body
-      .replace(/<rb>/g, '').replace(/<\/rb>/g, '')
+      .replace(/<rb[^>]*>/g, '').replace(/<\/rb>/g, '')
       .replace(/<span[^>]*class="colour[^"]*"[^>]*>/g, '').replace(/<\/span>/g, '')
       .replace(/\s{2,}/g, ' ');
 
@@ -108,12 +154,6 @@ async function handleNhkArticle(articleUrl, origin) {
   } catch (e) {
     return json({ error: 'ARTICLE_FAILED', detail: e.message }, 200, origin);
   }
-}
-
-function stripRuby(s) {
-  return s.replace(/<ruby[^>]*>(.*?)<\/ruby>/gs, (_, inner) =>
-    inner.replace(/<rt[^>]*>.*?<\/rt>/gs, '').replace(/<[^>]+>/g, '')
-  );
 }
 
 // ── Handwriting proxy ─────────────────────────────────────────────────────────
@@ -124,10 +164,10 @@ async function handleHandwrite(request, origin) {
     const r = await fetch(
       'https://inputtools.google.com/request?ime=handwriting&app=mobilesearch&cs=1&oe=UTF-8',
       {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(body),
-        signal:  AbortSignal.timeout(8000),
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(8000),
       }
     );
     const data = await r.json();
@@ -154,7 +194,7 @@ async function enrichJlpt(results, keyword) {
     if (!r.ok) return results;
     const k = await r.json();
     if (k.jlpt == null) return results;
-    const tag = 'jlpt-n' + k.jlpt; // kanjiapi returns numeric e.g. 3 → "jlpt-n3"
+    const tag = 'jlpt-n' + k.jlpt;
     return results.map(res => ({
       ...res,
       jlpt: (res.jlpt && res.jlpt.length) ? res.jlpt : [tag],

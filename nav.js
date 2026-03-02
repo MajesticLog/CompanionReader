@@ -10,14 +10,13 @@ function showPanel(id, btn) {
   if (btn) {
     btn.classList.add('active');
   } else {
-    const map = { lookup: 0, bookshelf: 1, lists: 2, writing: 3, radicals: 4, flashcards: 5, reader: 6 };
+    const map = { lookup: 0, bookshelf: 1, writing: 2, radicals: 3, flashcards: 4, reader: 5 };
     const i = map[id];
     const btns = document.querySelectorAll('nav button');
     if (Number.isInteger(i) && btns[i]) btns[i].classList.add('active');
   }
 
   try { if (id === 'bookshelf' && typeof renderShelf === 'function') { renderShelf(); renderShelfDetail(); } } catch(e) { console.error(e); }
-  try { if (id === 'lists' && typeof renderBookList === 'function') renderBookList(); } catch(e) { console.error(e); }
   try { if (id === 'radicals' && typeof renderRadicals === 'function') renderRadicals(); } catch(e) { console.error(e); }
   try { if (id === 'writing' && typeof hwResizeAll === 'function') {
     requestAnimationFrame(() => requestAnimationFrame(hwResizeAll));
