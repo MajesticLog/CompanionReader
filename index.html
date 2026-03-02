@@ -3,38 +3,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>積読フレンド ♥ </title>
-<meta name="theme-color" content="#CAC4F6"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-<meta name="apple-mobile-web-app-title" content="積読フレンド"/>
-
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300;400;500;600&family=Kosugi+Maru&display=swap" rel="stylesheet"/>
-<meta property="og:title" content="積読フレンド ♥"/>
-<meta property="og:description" content="Japanese reading companion — look up words, track books, practise kanji"/>
-<meta property="og:type" content="website"/>
-<meta property="og:image" content="https://majesticlog.github.io/plumheart.svg"/>
-<meta property="og:url" content="https://majesticlog.github.io/"/>
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="積読フレンド ♥"/>
-<meta name="twitter:description" content="Japanese reading companion — look up words, track books, practise kanji"/>
-<meta name="twitter:image" content="https://majesticlog.github.io/plumheart.svg"/>
-<link rel="icon" href="plumheart.svg" type="image/svg+xml"/>
-<link rel="apple-touch-icon" href="plumheart.svg"/>
 <link href="styles.css" rel="stylesheet"/>
-
-  <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-T4VFKGJ6XC"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-T4VFKGJ6XC');
-</script>
 </head>
 <body>
 <header class="topbar">
@@ -43,7 +17,7 @@
 </div>
 <div class="topbar-right">
 <span class="tagline">Japanese Reading Companion</span>
-<button class="btn btn-sm btn-outline sync-btn" onclick="openSyncPanel()" title="Backup &amp; restore" style="font-size:0.75rem;padding:4px 10px;opacity:0.75">⬆⬇</button>
+<button class="btn btn-sm" onclick="openWkSettings()" style="font-size:0.7rem;padding:4px 10px;margin-right:6px" title="WaniKani Settings">WK ⚙</button>
 <div aria-label="Theme" class="theme-dots">
 <button aria-label="Flowers theme" class="theme-dot" data-theme="flowers" title="Flowers" type="button"></button>
 <button aria-label="Joyful theme" class="theme-dot" data-theme="joyful" title="Joyful" type="button"></button>
@@ -54,9 +28,11 @@
 <nav>
 <button class="active" onclick="showPanel('lookup', this)">🔍 Lookup</button>
 <button onclick="showPanel('bookshelf', this)">📖 Books</button>
+<button onclick="showPanel('lists', this)">📚 Word Lists</button>
 <button onclick="showPanel('writing', this)">✍️ Handwrite</button>
 <button onclick="showPanel('radicals', this)">部首 Radicals</button>
 <button onclick="showPanel('flashcards', this)">🃏 Flashcards</button>
+<button onclick="showPanel('reader', this)">📰 Reader</button>
 </nav>
 <main>
 <!-- ── LOOKUP PANEL ── -->
@@ -71,8 +47,25 @@
 <div id="results"><p class="status-msg">Search for any Japanese word above.</p></div>
 </div>
 <div class="card">
-<h2>Quick Notes — メモ</h2>
-<textarea id="quick-notes" oninput="localStorage.setItem('tsundoku-notes',this.value)" placeholder="Jot down notes, sentences, context…" style="width:100%;min-height:200px;font-family:'Kosugi Maru',sans-serif;font-size:0.95rem;line-height:1.9;padding:12px;outline:none;resize:vertical;"></textarea>
+<h2>Example Sentences — 例文</h2>
+<div id="example-panel"><p class="status-msg" style="padding:16px 0">Search for a word to see example sentences.</p></div>
+</div>
+</div>
+</div>
+<!-- ── WORD LISTS PANEL ── -->
+<div class="panel" id="panel-lists">
+<div class="lists-layout">
+<div class="card" style="padding:16px">
+<h2>Books — 本</h2>
+<div class="new-book-form">
+<input id="new-book-input" onkeydown="if(event.key==='Enter')addBook()" placeholder="Book title…" type="text"/>
+<button class="btn btn-sm" onclick="addBook()">+</button>
+</div>
+<div class="book-list" id="book-list"></div>
+</div>
+<div class="card">
+<h2 id="list-title">Word List — 単語リスト</h2>
+<div id="word-list-content"><p class="empty-state">Select or create a book to see its word list.</p></div>
 </div>
 </div>
 </div>
@@ -318,39 +311,35 @@
 </div>
 </div>
 
-<!-- ── SYNC MODAL ── -->
-<div class="modal-overlay" id="sync-modal">
-  <div class="modal" style="max-width:440px">
-    <h2>Backup &amp; Restore — データ保存</h2>
-    <p style="font-size:0.84rem;color:var(--muted);margin-bottom:16px;line-height:1.6">
-      Your data lives in <em>your</em> browser — every visitor has their own
-      private copy automatically. Use export/import to move your data between
-      your own devices (AirDrop, email, iCloud Drive…).
-    </p>
-    <div class="modal-section">
-      <label>Export all data</label>
-      <button class="btn btn-sm" onclick="exportAllData()" style="width:100%;margin-top:6px">
-        ⬇ Download backup.json
-      </button>
+<!-- ── READER PANEL ── -->
+<div class="panel" id="panel-reader">
+  <div class="card" style="max-width:800px;margin:0 auto">
+    <h2>Graded Reader — 多読</h2>
+    <div class="reader-controls">
+      <div class="reader-toolbar">
+        <select id="reader-source" onchange="readerLoadSource()">
+          <option value="nhk">📰 NHK Easy News (N4/N3)</option>
+          <option value="tadoku-n2">📖 Tadoku Stories — N2</option>
+          <option value="tadoku-n1">📖 Tadoku Stories — N1</option>
+        </select>
+        <label class="reader-toggle">
+          <input type="checkbox" id="furigana-toggle" onchange="readerToggleFurigana(this.checked)" checked>
+          Show furigana
+        </label>
+      </div>
+      <div id="reader-article-list" class="reader-article-list">
+        <p class="status-msg">Loading articles…</p>
+      </div>
     </div>
-    <div class="modal-section" style="margin-top:12px">
-      <label>Import from backup</label>
-      <p style="font-size:0.78rem;color:var(--muted);margin:4px 0 8px">
-        Merges new books into your current data — nothing is overwritten.
-      </p>
-      <input type="file" id="sync-file-input" accept=".json"
-             style="display:none" onchange="importAllData(event)"/>
-      <button class="btn btn-sm btn-outline"
-              onclick="document.getElementById('sync-file-input').click()"
-              style="width:100%">⬆ Choose backup.json…</button>
-      <p id="sync-status" style="font-size:0.82rem;margin-top:8px;color:var(--muted)"></p>
-    </div>
-    <div class="modal-footer" style="margin-top:16px">
-      <button class="btn btn-sm btn-outline" onclick="closeSyncPanel()">Close</button>
+    <div id="reader-content" class="reader-content" style="display:none">
+      <div class="reader-back-bar">
+        <button class="btn btn-sm btn-outline" onclick="readerBackToList()">← Back</button>
+        <span id="reader-article-title" style="font-weight:600;margin-left:12px"></span>
+      </div>
+      <div id="reader-body" class="reader-body"></div>
     </div>
   </div>
 </div>
-
 </main>
 <script defer="" src="state.js"></script>
 <script defer="" src="nav.js"></script>
@@ -360,7 +349,34 @@
 <script defer="" src="handwriting.js"></script>
 <script defer="" src="radicals.js"></script>
 <script defer="" src="flashcards.js"></script>
-<script defer="" src="sync.js"></script>
-  <script defer src="jlpt-backfill.js"></script>
+<script defer="" src="wanikani.js"></script>
+<script defer="" src="reader.js"></script>
 <script defer="" src="init.js"></script>
+
+<!-- ── WANIKANI SETTINGS MODAL ── -->
+<div class="modal-overlay" id="wk-modal">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-header">
+      <h3>WaniKani Integration</h3>
+      <button class="modal-close" onclick="closeWkSettings()">✕</button>
+    </div>
+    <div style="padding:16px 20px 20px">
+      <p style="margin:0 0 12px;font-size:0.9rem;line-height:1.6;opacity:0.8">
+        Connect your WaniKani account to see WK levels on vocab and in the lookup panel.
+        Get your API token from
+        <a href="https://www.wanikani.com/settings/personal_access_tokens" target="_blank" rel="noreferrer" style="color:var(--accent-stroke)">wanikani.com → Settings → API Tokens</a>.
+      </p>
+      <label style="display:block;font-size:0.8rem;font-weight:600;margin-bottom:6px;letter-spacing:0.06em">API TOKEN</label>
+      <input id="wk-token-input" type="password" placeholder="Paste your WaniKani v2 API token…"
+        style="width:100%;padding:10px 12px;border:1.5px solid var(--card-stroke);border-radius:6px;font-size:0.9rem;background:var(--card-bg);color:inherit;box-sizing:border-box"/>
+      <div style="margin-top:12px;display:flex;align-items:center;gap:12px">
+        <button class="btn" onclick="saveWkToken()">Save & Connect</button>
+        <span id="wk-status" style="font-size:0.85rem"></span>
+      </div>
+      <p style="margin:16px 0 0;font-size:0.78rem;opacity:0.6;line-height:1.5">
+        Your token is stored only in this browser's localStorage and is never sent anywhere except directly to api.wanikani.com.
+      </p>
+    </div>
+  </div>
+</div>
 </body></html>

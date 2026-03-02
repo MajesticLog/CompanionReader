@@ -177,12 +177,13 @@ function renderVocabTable(entry) {
       <td class="reading-cell">${shelfEsc(w.reading)}</td>
       <td class="meaning-cell">${shelfEsc(w.meaning)}</td>
       ${w.jlpt ? '<td class="jlpt-cell"><span class="jlpt-badge jlpt-sm">' + w.jlpt.toUpperCase() + '</span></td>' : '<td class="jlpt-cell">—</td>'}
+      + (w.wk_level != null ? '<td class="wk-cell"><span class="wk-badge-sm">L' + w.wk_level + '</span></td>' : '<td class="wk-cell">—</td>')
       <td class="action-cell"><button class="del-btn" onclick="removeShelfWord('${entry.id}', ${realIdx})" title="Remove">✕</button></td>
     </tr>`;
   }).join('');
 
   return `<table class="words-table">
-    <thead><tr><th>Word</th><th>Reading</th><th>Meaning</th><th>INFO</th><th></th></tr></thead>
+    <thead><tr><th>Word</th><th>Reading</th><th>Meaning</th><th>JLPT</th><th>WK</th><th></th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
@@ -348,6 +349,8 @@ function shelfBookOptions() {
 
 // ── Init ────────────────────────────────────────────
 function initShelf() {
+  // Reload from localStorage so external writes (e.g. JSON import) are picked up
+  shelf = JSON.parse(localStorage.getItem('tsundoku-shelf') || '[]');
   renderShelf();
   if (shelf.length) {
     activeShelfId = shelf[0].id;

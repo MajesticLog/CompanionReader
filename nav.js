@@ -10,7 +10,7 @@ function showPanel(id, btn) {
   if (btn) {
     btn.classList.add('active');
   } else {
-    const map = { lookup: 0, bookshelf: 1, writing: 2, radicals: 3, flashcards: 4 };
+    const map = { lookup: 0, bookshelf: 1, lists: 2, writing: 3, radicals: 4, flashcards: 5, reader: 6 };
     const i = map[id];
     const btns = document.querySelectorAll('nav button');
     if (Number.isInteger(i) && btns[i]) btns[i].classList.add('active');

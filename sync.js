@@ -17,9 +17,10 @@ document.getElementById('sync-modal')
 
 function exportAllData() {
   const payload = {
-    version:    1,
+    version:    2,
     exported:   new Date().toISOString(),
     shelf:      JSON.parse(localStorage.getItem('tsundoku-shelf')  || '[]'),
+    rdbooks:    JSON.parse(localStorage.getItem('rdbooks')         || '[]'),
     fcScores:   JSON.parse(localStorage.getItem('fc-scores')       || '{}'),
     quickNotes: localStorage.getItem('tsundoku-notes')             || '',
     theme:      localStorage.getItem('tsundoku-theme')             || 'flowers',
@@ -41,14 +42,33 @@ async function importAllData(event) {
   status.textContent = 'Reading…';
   try {
     const payload = JSON.parse(await file.text());
-    if (!payload.version || !Array.isArray(payload.shelf))
+    if (!payload.version || (!Array.isArray(payload.shelf) && !Array.isArray(payload.rdbooks)))
       throw new Error('Not a valid backup file');
 
-    // Merge shelf — add books that don't exist yet (matched by id)
+    // Merge shelf — add books/vocab that don't exist yet (matched by id)
     const existing = JSON.parse(localStorage.getItem('tsundoku-shelf') || '[]');
     const ids = new Set(existing.map(e => e.id));
     let added = 0;
-    for (const e of payload.shelf) { if (!ids.has(e.id)) { existing.push(e); added++; } }
+
+    // New-format shelf entries (tsundoku-shelf key)
+    for (const e of (payload.shelf || [])) {
+      if (!e.vocab && e.words) { e.vocab = e.words; }  // normalise old field name
+      if (!e.vocab) e.vocab = [];
+      if (!ids.has(e.id)) { existing.push(e); ids.add(e.id); added++; }
+    }
+
+    // OLD-format books (rdbooks key) — migrate into shelf so they appear in Books panel
+    for (const b of (payload.rdbooks || [])) {
+      if (ids.has(b.id)) continue;
+      existing.push({
+        id: b.id, title: b.title || 'Untitled', author: '', cover: '',
+        status: b.status === 'read' ? 'finished' : 'reading',
+        rating: b.rating || 0, notes: '', dateAdded: '', dateFinished: '',
+        vocab: (b.words || []).map(w => ({ word: w.word, reading: w.reading, meaning: w.meaning })),
+      });
+      ids.add(b.id); added++;
+    }
+
     localStorage.setItem('tsundoku-shelf', JSON.stringify(existing));
 
     // Merge fc-scores — keep higher ease value per word
@@ -70,8 +90,9 @@ async function importAllData(event) {
     // Theme
     if (payload.theme && typeof applyTheme === 'function') applyTheme(payload.theme);
 
-    // Refresh UI
-    if (typeof renderShelf         === 'function') { renderShelf(); renderShelfDetail?.(); }
+    // Refresh UI — reinitialise shelf from localStorage so the in-memory array is current
+    if (typeof initShelf           === 'function') initShelf();
+    else if (typeof renderShelf    === 'function') { renderShelf(); renderShelfDetail?.(); }
     if (typeof showFlashcardsSetup === 'function') showFlashcardsSetup();
 
     status.textContent = `✓ Imported ${added} new book${added !== 1 ? 's' : ''}.`;

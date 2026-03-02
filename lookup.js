@@ -5,6 +5,8 @@
 const JISHO_API = (window.TSUNDOKU_CONFIG && window.TSUNDOKU_CONFIG.jishoApi)
   || "https://minireader.zoe-caudron.workers.dev/?keyword=";
 
+const TATOEBA_API = "https://api.tatoeba.org/unstable/sentences?lang=jpn&trans_lang=eng&q=";
+
 document.getElementById('search-input')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') lookupWord();
 });
@@ -24,7 +26,7 @@ async function lookupWord(queryOverride) {
   } catch (e) {
     if (res) {
       res.innerHTML =
-        `<p class="status-msg">⚠️ Dictionary lookup failed. Try typing in kana or searching directly: ` +
+        `<p class="status-msg">⚠️ Dictionary lookup failed. Try searching directly: ` +
         `<a href="https://jisho.org/search/${encodeURIComponent(q)}" target="_blank" rel="noreferrer"
            style="color:var(--accent-stroke)">jisho.org ↗</a></p>`;
     }
@@ -41,15 +43,14 @@ function renderResults(entries) {
   }
 
   res.innerHTML = '';
-  // Use a numeric index for IDs — sanitize() turns all kanji to '_' causing collisions
-  entries.slice(0, 8).forEach((entry, i) => {
+  const uid_map = {};
+  entries.slice(0, 8).forEach((entry, idx) => {
     const word     = entry.japanese[0]?.word || entry.japanese[0]?.reading || '';
     const reading  = entry.japanese[0]?.reading || '';
     const meanings = entry.senses[0]?.english_definitions?.join('; ') || '';
-    const _flatPos = (p) => typeof p === 'string' ? [p] : Array.isArray(p) ? p.flatMap(_flatPos) : (p && typeof p === 'object' ? [Object.keys(p)[0]||''] : []);
-    const tags     = _flatPos(entry.senses[0]?.parts_of_speech || []).filter(Boolean).slice(0, 2).join(', ');
+    const tags     = [...(entry.senses[0]?.parts_of_speech || [])].slice(0,2).join(', ');
     const jlpt     = entry.jlpt?.[0] || '';
-    const uid      = 'res' + i;   // guaranteed unique, no kanji collision
+    const uid      = 'res' + idx;
 
     const shelfOpts = (typeof shelfBookOptions === 'function') ? shelfBookOptions() : '';
     const oldOpts   = (typeof books !== 'undefined' && books.length)
@@ -64,9 +65,13 @@ function renderResults(entries) {
         <span class="kanji-large">${escapeHtml(word)}</span>
         <span class="reading">${word !== reading ? escapeHtml(reading) : ''}</span>
         ${jlpt ? `<span class="jlpt-badge">${escapeHtml(jlpt.toUpperCase())}</span>` : ''}
+        ${getWkBadge(word)}
       </div>
       <div class="meanings">${escapeHtml(meanings)}</div>
       ${tags ? `<div class="tags">${escapeHtml(tags)}</div>` : ''}
+      <div class="example-sentence" id="ex-${uid}">
+        <span class="ex-loading">Loading example…</span>
+      </div>
       <div class="add-btn">
         <select class="lookup-book-select" id="bk-${uid}" style="max-width:200px">
           ${allOpts}
@@ -74,20 +79,90 @@ function renderResults(entries) {
         <button class="btn btn-sm add-to-book-btn">+ Add to book</button>
       </div>`;
     res.appendChild(div);
-    // Wire up button via addEventListener — avoids ALL quoting/apostrophe issues in onclick HTML
+
+    // Wire up add button via closure — avoids apostrophe/quote HTML injection bugs
     div.querySelector('.add-to-book-btn').addEventListener('click', () => {
       addToSelectedBook(word, reading, meanings, 'bk-' + uid, jlpt);
     });
+
+    // Fetch example sentence async — don't block rendering
+    fetchExampleSentence(word, uid);
   });
+}
+
+// ── Example sentences via Tatoeba ─────────────────────────────────────────
+async function fetchExampleSentence(word, uid) {
+  const box = document.getElementById('ex-' + uid);
+  if (!box) return;
+  try {
+    const r = await fetch(TATOEBA_API + encodeURIComponent(word) + '&limit=3', {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!r.ok) throw new Error('no results');
+    const data = await r.json();
+    const sentences = data.data || [];
+    // Find one with a Japanese sentence and English translation
+    const best = sentences.find(s =>
+      s.text && s.translations?.flat()?.some(t => t.lang === 'eng')
+    );
+    if (!best) throw new Error('none found');
+    const eng = best.translations.flat().find(t => t.lang === 'eng');
+    box.innerHTML = `
+      <div class="ex-jp">${escapeHtml(best.text)}</div>
+      ${eng ? `<div class="ex-en">${escapeHtml(eng.text)}</div>` : ''}
+      <div class="ex-credit">via <a href="https://tatoeba.org" target="_blank" rel="noreferrer" style="color:var(--accent-stroke)">Tatoeba</a></div>`;
+  } catch (_) {
+    box.innerHTML = '<span class="ex-none">No example found</span>';
+  }
+}
+
+// ── WaniKani level badge ───────────────────────────────────────────────────
+function getWkBadge(word) {
+  const token = localStorage.getItem('wk-token');
+  const cache = JSON.parse(localStorage.getItem('wk-level-cache') || '{}');
+  if (cache[word] != null) {
+    return `<span class="wk-badge" title="WaniKani level">WK${cache[word]}</span>`;
+  }
+  if (token && word) {
+    // Async fetch — update badge once we get the result
+    fetchWkLevel(word);
+  }
+  return '';
+}
+
+async function fetchWkLevel(word) {
+  const token = localStorage.getItem('wk-token');
+  if (!token || !word) return;
+  const cache = JSON.parse(localStorage.getItem('wk-level-cache') || '{}');
+  if (cache[word] !== undefined) return;
+
+  try {
+    const r = await fetch(
+      `https://api.wanikani.com/v2/subjects?types=vocabulary,kanji&slugs=${encodeURIComponent(word)}`,
+      { headers: { 'Authorization': `Bearer ${token}`, 'Wanikani-Revision': '20170710' } }
+    );
+    if (!r.ok) return;
+    const d = await r.json();
+    const subject = d.data?.[0];
+    if (!subject) return;
+    const level = subject.data?.level;
+    if (level == null) return;
+    cache[word] = level;
+    localStorage.setItem('wk-level-cache', JSON.stringify(cache));
+    // Re-render any visible badges for this word
+    document.querySelectorAll('.wk-badge-pending[data-word]').forEach(el => {
+      if (el.dataset.word === word) {
+        el.textContent = `WK${level}`;
+        el.classList.remove('wk-badge-pending');
+        el.classList.add('wk-badge');
+      }
+    });
+  } catch (_) {}
 }
 
 function addToSelectedBook(word, reading, meaning, selectId, jlpt = '') {
   const sel = document.getElementById(selectId);
-  if (!sel || !sel.value) {
-    // Fallback: if select not found, show an alert so the bug is visible
-    console.error('[lookup] select not found:', selectId);
-    return;
-  }
+  if (!sel || !sel.value) return;
   const bookId = sel.value;
 
   let added = false;
@@ -99,13 +174,11 @@ function addToSelectedBook(word, reading, meaning, selectId, jlpt = '') {
   }
 
   if (added === false) {
-    // already exists — flash the select
     sel.style.outline = '2px solid var(--accent-stroke)';
     setTimeout(() => sel.style.outline = '', 1200);
     return;
   }
 
-  // Visual feedback
   const btn = sel.nextElementSibling;
   if (btn) {
     const orig = btn.textContent;
