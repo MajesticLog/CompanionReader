@@ -182,7 +182,7 @@ function renderVocabTable(entry) {
   }).join('');
 
   return `<table class="words-table">
-    <thead><tr><th>Word</th><th>Reading</th><th>Meaning</th><th>JLPT</th><th></th></tr></thead>
+    <thead><tr><th>Word</th><th>Reading</th><th>Meaning</th><th>INFO</th><th></th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
