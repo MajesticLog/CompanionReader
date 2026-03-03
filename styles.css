@@ -218,9 +218,11 @@ nav button:focus-visible { outline: none; box-shadow: var(--ring) !important; }
 main { max-width: 1100px; margin: 0 auto; padding: 28px 20px; overflow-x: hidden; }
 
 /* ── Panel visibility ────────────────────────────── */
-.panel { display: none; }
+.panel { display: none; overflow: hidden; max-width: 100%; }
 .panel.active {
   display: block;
+  max-width: 100%;
+  overflow-x: hidden;
   animation: panelIn 180ms ease both;
 }
 @keyframes panelIn {
@@ -606,7 +608,7 @@ button:focus-visible, .btn:focus-visible { outline: none; box-shadow: var(--ring
 }
 
 /* ── Handwriting panel ───────────────────────────── */
-.writing-layout           { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+.writing-layout           { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .writing-layout.writing-two { grid-template-columns: 1fr 1fr; }
 @media (max-width: 980px) { .writing-layout.writing-two { grid-template-columns: 1fr; } }
 @media (max-width: 700px) { .writing-layout { grid-template-columns: 1fr; } }
@@ -641,7 +643,7 @@ button:focus-visible, .btn:focus-visible { outline: none; box-shadow: var(--ring
 /* ── Radicals panel ──────────────────────────────── */
 .radical-layout {
   display: grid;
-  grid-template-columns: minmax(0, 280px) 1fr;
+  grid-template-columns: 280px 1fr;
   gap: 24px;
   align-items: start;
 }
