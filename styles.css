@@ -77,6 +77,26 @@
   --fc-back-ink: var(--ink);
 }
 
+/* Theme 4 — Coffee */
+:root[data-theme="coffee"] {
+  --bg:             #E6E0C4;       /* parchment cream */
+  --accent:         #6B3C2E;       /* espresso — topbar & nav */
+  --accent-2:       #86ABCB;       /* dusty blue */
+  --ink:            #2E1F18;       /* very dark espresso */
+  --muted:          color-mix(in srgb, var(--ink) 50%, transparent);
+
+  --border:         rgba(46,31,24,0.16);
+  --border-strong:  rgba(46,31,24,0.30);
+  --accent-stroke:  #E5A2A0;       /* blush rose — badges, links, highlights */
+  --accent2-stroke: #86ABCB;       /* dusty blue — secondary badges */
+
+  --ring: 0 0 0 3px rgba(229,162,160,0.30);
+
+  --fc-back-bg:  #2E1F18;
+  --fc-back-ink: #E6E0C4;
+}
+
+
 /* ── Reset ────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -177,8 +197,9 @@ h2 {
 
 /* Each dot always shows its own theme's main colour, regardless of active theme */
 .theme-dot[data-theme="flowers"] { background: #CAC4F6; }
-.theme-dot[data-theme="joyful"]  { background: #FFB8D9; }
+.theme-dot[data-theme="joyful"]  { background: #C8B8C8; }
 .theme-dot[data-theme="plum"]    { background: #AF6384; }
+.theme-dot[data-theme="coffee"]  { background: #6B3C2E; }
 
 /* ── NAV (filled — intentional) ─────────────────── */
 .nav-wrap {
