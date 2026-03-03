@@ -44,7 +44,7 @@
   --bg:             #EEF2DD;       /* warm latte cream */
   --accent:         #E7B9C6;       /* strawberry milk layer */
   --accent-2:       #8AAF6A;       /* matcha green */
-  --ink:            #2C2820;       /* warm dark espresso */
+  --ink:            #6A9448;       /* warm dark espresso */
   --muted:          color-mix(in srgb, var(--ink) 50%, transparent);
 
   --border:         rgba(44,40,32,0.15);
@@ -55,7 +55,7 @@
   --ring: 0 0 0 3px rgba(192,112,144,0.25);
 
   --fc-back-bg:  #2C2820;
-  --fc-back-ink: #F5F2EC;
+  --fc-back-ink: #482916;
 }
 
 /* Theme 3 — Plum */
