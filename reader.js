@@ -97,7 +97,16 @@ async function readerLoadNhk(listEl) {
     for (const article of data.articles) {
       const btn = document.createElement('button');
       btn.className = 'reader-article-btn';
-      btn.innerHTML = `<span class="reader-article-title">${escapeHtml(article.title)}</span><span class="reader-article-date">${article.date || ''}</span>`;
+      const titleText = article.title || 'Article ' + article.id;
+      const imgHtml = article.img
+        ? `<img class="reader-article-thumb" src="${escapeHtml(article.img)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+        : '';
+      btn.innerHTML = `
+        ${imgHtml}
+        <span class="reader-article-info">
+          <span class="reader-article-title">${escapeHtml(titleText)}</span>
+          ${article.date ? `<span class="reader-article-date">${escapeHtml(article.date)}</span>` : ''}
+        </span>`;
       btn.addEventListener('click', () => readerOpenNhkArticle(article));
       listEl.appendChild(btn);
     }
@@ -133,8 +142,20 @@ async function readerOpenNhkArticle(article) {
   }
 }
 
+function getWeekNumber() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  return Math.floor((now - start) / (7 * 24 * 60 * 60 * 1000));
+}
+
 function readerLoadTadoku(source, listEl) {
-  const stories = TADOKU_STORIES[source] || [];
+  const allStories = TADOKU_STORIES[source] || [];
+  // Rotate: each week show a different story first (cycles through all stories)
+  const weekOffset = getWeekNumber() % Math.max(allStories.length, 1);
+  const stories = [
+    ...allStories.slice(weekOffset),
+    ...allStories.slice(0, weekOffset),
+  ];
   if (!stories.length) { listEl.innerHTML = '<p class="status-msg">No stories available.</p>'; return; }
   listEl.innerHTML = '';
   for (const story of stories) {
