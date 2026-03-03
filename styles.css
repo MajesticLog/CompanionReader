@@ -43,7 +43,7 @@
 :root[data-theme="joyful"] {
   --bg:             #EEF2DD;       /* warm latte cream */
   --accent:         #E7B9C6;       /* strawberry milk layer */
-  --accent-2:       #8AAF6A;       /* matcha green */
+  --accent-2:       #6A9448;       /* matcha green */
   --ink:            #6A9448;       /* warm dark espresso */
   --muted:          color-mix(in srgb, var(--ink) 50%, transparent);
 
