@@ -5,7 +5,6 @@
 const JISHO_API = (window.TSUNDOKU_CONFIG && window.TSUNDOKU_CONFIG.jishoApi)
   || "https://minireader.zoe-caudron.workers.dev/?keyword=";
 
-const TATOEBA_API = "https://api.tatoeba.org/unstable/sentences?lang=jpn&trans_lang=eng&q=";
 
 document.getElementById('search-input')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') lookupWord();
@@ -69,9 +68,6 @@ function renderResults(entries) {
       </div>
       <div class="meanings">${escapeHtml(meanings)}</div>
       ${tags ? `<div class="tags">${escapeHtml(tags)}</div>` : ''}
-      <div class="example-sentence" id="ex-${uid}">
-        <span class="ex-loading">Loading example…</span>
-      </div>
       <div class="add-btn">
         <select class="lookup-book-select" id="bk-${uid}" style="max-width:200px">
           ${allOpts}
@@ -84,37 +80,9 @@ function renderResults(entries) {
     div.querySelector('.add-to-book-btn').addEventListener('click', () => {
       addToSelectedBook(word, reading, meanings, 'bk-' + uid, jlpt);
     });
-
-    // Fetch example sentence async — don't block rendering
-    fetchExampleSentence(word, uid);
   });
 }
 
-// ── Example sentences via Tatoeba ─────────────────────────────────────────
-async function fetchExampleSentence(word, uid) {
-  const box = document.getElementById('ex-' + uid);
-  if (!box) return;
-  try {
-    const r = await fetch(TATOEBA_API + encodeURIComponent(word) + '&limit=3', {
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!r.ok) throw new Error('no results');
-    const data = await r.json();
-    const sentences = data.data || [];
-    // Find one with a Japanese sentence and English translation
-    const best = sentences.find(s =>
-      s.text && s.translations?.flat()?.some(t => t.lang === 'eng')
-    );
-    if (!best) throw new Error('none found');
-    const eng = best.translations.flat().find(t => t.lang === 'eng');
-    box.innerHTML = `
-      <div class="ex-jp">${escapeHtml(best.text)}</div>
-      ${eng ? `<div class="ex-en">${escapeHtml(eng.text)}</div>` : ''}
-      <div class="ex-credit">via <a href="https://tatoeba.org" target="_blank" rel="noreferrer" style="color:var(--accent-stroke)">Tatoeba</a></div>`;
-  } catch (_) {
-    box.innerHTML = '<span class="ex-none">No example found</span>';
-  }
-}
 
 // ── WaniKani level badge ───────────────────────────────────────────────────
 function getWkBadge(word) {

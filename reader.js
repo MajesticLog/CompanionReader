@@ -67,7 +67,7 @@ const TADOKU_STORIES = {
   ],
 };
 
-let readerFurigana = true;
+let readerFurigana = false;
 let readerCurrentSource = 'nhk';
 let readerNhkArticles = null;
 
@@ -207,7 +207,7 @@ window.initReader           = initReader;
 
 document.addEventListener('DOMContentLoaded', () => {
   const tog = document.getElementById('furigana-toggle');
-  if (tog) tog.checked = readerFurigana;
+  if (tog) { tog.checked = readerFurigana; }
 });
 
 function escapeHtml(s) {

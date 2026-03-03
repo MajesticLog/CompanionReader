@@ -378,8 +378,7 @@ button:focus-visible, .btn:focus-visible { outline: none; box-shadow: var(--ring
 .add-btn select { max-width: 180px; font-size: 0.85rem; }
 
 /* ── Grid layouts ────────────────────────────────── */
-.lookup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-@media (max-width: 700px) { .lookup-grid { grid-template-columns: 1fr; } }
+.lookup-grid { display: block; }
 
 /* ── Word Lists ──────────────────────────────────── */
 .lists-layout { display: grid; grid-template-columns: 220px 1fr; gap: 24px; min-height: 60vh; align-items: start; }
@@ -1224,32 +1223,6 @@ td.jlpt-cell { white-space: nowrap; }
    NEW STYLES: Example sentences, WK badge, Reader, WK modal
    ============================================================ */
 
-/* ── Example sentences in lookup panel ─────────────────────── */
-.example-sentence {
-  margin: 6px 0 8px;
-  padding: 8px 12px;
-  background: var(--page-bg, #f5f2eb);
-  border-radius: 6px;
-  border-left: 3px solid var(--accent-stroke, #8a7a5a);
-  font-size: 0.88rem;
-  line-height: 1.7;
-}
-.ex-jp {
-  font-family: 'Kosugi Maru', sans-serif;
-  font-size: 1rem;
-  margin-bottom: 2px;
-}
-.ex-en {
-  opacity: 0.72;
-  font-size: 0.83rem;
-}
-.ex-credit {
-  font-size: 0.72rem;
-  opacity: 0.5;
-  margin-top: 3px;
-}
-.ex-loading { opacity: 0.45; font-size: 0.82rem; font-style: italic; }
-.ex-none    { opacity: 0.35; font-size: 0.82rem; font-style: italic; }
 
 /* ── WaniKani level badge ───────────────────────────────────── */
 .wk-badge {
