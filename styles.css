@@ -86,6 +86,11 @@
   text-shadow: none !important;
 }
 
+/* Prevent any element from overflowing the viewport width */
+img, canvas, video, iframe, table {
+  max-width: 100%;
+}
+
 /* ── Base ─────────────────────────────────────────── */
 body {
   font-family: 'Funnel Display', sans-serif;
@@ -343,6 +348,15 @@ canvas {
   touch-action: none;
   pointer-events: auto;
   max-width: 100%;
+  width: 100%;
+  height: auto;
+}
+/* Writing canvases get fixed height, width capped by container */
+#writing-canvas-1,
+#writing-canvas-2 {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 300px !important;
 }
 #writing-canvas-1, #writing-canvas-2 {
   pointer-events: auto !important;
@@ -592,7 +606,7 @@ button:focus-visible, .btn:focus-visible { outline: none; box-shadow: var(--ring
 }
 
 /* ── Handwriting panel ───────────────────────────── */
-.writing-layout           { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.writing-layout           { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
 .writing-layout.writing-two { grid-template-columns: 1fr 1fr; }
 @media (max-width: 980px) { .writing-layout.writing-two { grid-template-columns: 1fr; } }
 @media (max-width: 700px) { .writing-layout { grid-template-columns: 1fr; } }
@@ -627,12 +641,12 @@ button:focus-visible, .btn:focus-visible { outline: none; box-shadow: var(--ring
 /* ── Radicals panel ──────────────────────────────── */
 .radical-layout {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: minmax(0, 280px) 1fr;
   gap: 24px;
   align-items: start;
 }
 @media (max-width: 900px) {
-  /* iPad portrait and below: picker on top, build word below */
+  /* Tablet and below: picker on top, build word below */
   .radical-layout {
     grid-template-columns: 1fr;
   }
