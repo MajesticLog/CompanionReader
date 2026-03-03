@@ -174,14 +174,20 @@ h2 {
 .theme-dot[data-theme="plum"]    { background: #AF6384; }
 
 /* ── NAV (filled — intentional) ─────────────────── */
+.nav-wrap {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--accent) 55%, var(--bg) 45%);
+  border-bottom: var(--stroke) solid var(--border-strong);
+}
 nav {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   padding: 8px 18px;
-  background: color-mix(in srgb, var(--accent) 55%, var(--bg) 45%);
-  border-bottom: var(--stroke) solid var(--border-strong);
   align-items: center;
+  background: transparent;
+  border-bottom: none;
 }
 nav button {
   background: transparent;
@@ -393,8 +399,9 @@ button:focus-visible, .btn:focus-visible { outline: none; box-shadow: var(--ring
 }
 
 /* ── Search bar ──────────────────────────────────── */
-.search-bar { display: flex; gap: 8px; margin-bottom: 18px; }
-.search-bar input { flex: 1; font-family: 'Kosugi Maru', sans-serif; font-size: 1.05rem; }
+.search-bar { display: flex; gap: 8px; margin-bottom: 18px; min-width: 0; }
+.search-bar input { flex: 1; min-width: 0; font-family: 'Kosugi Maru', sans-serif; font-size: 1.05rem; }
+.search-bar .btn { flex-shrink: 0; white-space: nowrap; }
 
 /* ── Lookup results ──────────────────────────────── */
 #results { min-height: 80px; }
@@ -615,8 +622,29 @@ button:focus-visible, .btn:focus-visible { outline: none; box-shadow: var(--ring
 }
 
 /* ── Radicals panel ──────────────────────────────── */
-.radical-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-@media (max-width: 700px) { .radical-layout { grid-template-columns: 1fr; } }
+.radical-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  /* iPad portrait and below: picker on top, build word below */
+  .radical-layout {
+    grid-template-columns: 1fr;
+  }
+  .radical-grid {
+    max-height: none !important;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  }
+  .stroke-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+}
 
 .radical-info { font-size: 0.84rem; color: var(--muted); margin-bottom: 12px; line-height: 1.55; }
 
@@ -1228,7 +1256,6 @@ td.jlpt-cell { white-space: nowrap; }
 
   /* ── Radicals ───────────────────────────────────────── */
   .radical-layout { grid-template-columns: 1fr; gap: 12px; }
-  .radical-grid   { max-height: 200px; }
 
   /* ── Flashcards ─────────────────────────────────────── */
   .fc-setup .card { padding: 14px 12px; }
@@ -1591,4 +1618,34 @@ input[type="checkbox"]:focus-visible {
   /* Very small phones — nav text even smaller */
   nav button { font-size: 0.68rem; padding: 4px 8px; }
   .fc-word   { font-size: 3rem !important; }
+}
+
+/* ── Vocab table meaning column ───────────────────── */
+.words-table td:nth-child(3) {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .words-table td:nth-child(3) { max-width: 140px; }
+}
+/* ── Nav scroll fade (mobile) ──────────────────────── */
+@media (max-width: 640px) {
+  .nav-wrap {
+    position: relative;
+  }
+  .nav-wrap::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 32px;
+    background: linear-gradient(to right, transparent, var(--bg));
+    pointer-events: none;
+  }
+}
+@media (max-width: 380px) {
+  .topbar-right { gap: 5px; }
+  .wk-btn-text { display: none; }
+  .sync-btn .sync-label { display: none; }
 }
