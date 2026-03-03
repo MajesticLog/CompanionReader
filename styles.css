@@ -1180,6 +1180,33 @@ td.jlpt-cell { white-space: nowrap; }
 /* ════════════════════════════════════════════════════════════
    MOBILE  (≤ 640 px  — iPhone SE through iPhone Pro Max)
    ════════════════════════════════════════════════════════════ */
+
+/* ── Tablet topbar & nav fixes (641px–900px) ──────────────── */
+@media (max-width: 900px) {
+  /* Hide tagline to give Sync/WK buttons room */
+  .tagline { display: none; }
+
+  /* Nav scrolls horizontally, no wrap */
+  nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 6px 12px;
+    gap: 4px;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  nav button {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Topbar: tighten spacing */
+  .topbar { gap: 10px; padding: 10px 16px; }
+  .topbar-right { gap: 8px; }
+  .sync-btn { font-size: 0.75rem !important; padding: 4px 10px !important; }
+}
+
 @media (max-width: 640px) {
 
   /* ── Topbar ─────────────────────────────────────────── */
