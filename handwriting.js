@@ -25,11 +25,17 @@ function hwNowMs() { return Math.round(performance.now()); }
 /* ── Resize a single canvas to fill its CSS layout box ── */
 function hwResizeCanvas(canvas) {
   if (!canvas) return;
-  const wrap = canvas.parentElement;
-  // Cap width to viewport to prevent horizontal overflow on mobile
-  const maxW = window.innerWidth - 32; // 16px margin each side
-  const wrapW = wrap ? wrap.clientWidth - 32 : 0;
-  const w = Math.min(maxW, Math.max(200, wrapW || parseInt(canvas.getAttribute('width') || '420')));
+  // Walk up to the .card to measure available width reliably
+  let container = canvas.parentElement;
+  while (container && !container.classList.contains('card')) {
+    container = container.parentElement;
+  }
+  // Subtract card padding (14px each side on mobile) + border
+  const cardPad = 28;
+  const mainPad = 20; // main element padding
+  const available = (container ? container.clientWidth : window.innerWidth) - cardPad;
+  const maxW = window.innerWidth - mainPad * 2;
+  const w = Math.max(180, Math.min(available, maxW));
   const h = parseInt(canvas.getAttribute('height') || '350');
   if (canvas.width === w && canvas.height === h) return;
   canvas.width  = w;
@@ -59,6 +65,11 @@ function hwResizeAll() {
   if (!hwCanvases.length) return;
   hwCanvases.forEach(hwResizeCanvas);
   hwCanvases.forEach(hwDrawGrid);
+  // Re-run after layout settles (handles display:none panels shown late)
+  setTimeout(() => {
+    hwCanvases.forEach(hwResizeCanvas);
+    hwCanvases.forEach(hwDrawGrid);
+  }, 100);
 }
 
 /* ── Accurate pointer position relative to canvas ──
