@@ -259,7 +259,41 @@ input[type=range] {
   width: 80px;
 }
 #panel-writing input[type=range] {
-  accent-color: var(--accent-stroke);
+  accent-color: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--border);
+  border-radius: var(--radius-pill);
+  outline: none;
+  width: 80px;
+}
+#panel-writing input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: transparent;
+  border: var(--stroke) solid var(--accent-stroke);
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+#panel-writing input[type=range]::-webkit-slider-thumb:hover {
+  background: color-mix(in srgb, var(--accent-stroke) 20%, transparent);
+}
+#panel-writing input[type=range]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: transparent;
+  border: var(--stroke) solid var(--accent-stroke);
+  cursor: pointer;
+}
+#panel-writing input[type=range]::-moz-range-track {
+  background: var(--border);
+  border-radius: var(--radius-pill);
+  height: 4px;
 }
 input[type=color] {
   width: 32px;
@@ -1248,29 +1282,32 @@ td.jlpt-cell { white-space: nowrap; }
 /* ── WaniKani level badge ───────────────────────────────────── */
 .wk-badge {
   display: inline-block;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: #00a0de;  /* WaniKani blue */
-  color: #fff;
+  font-size: 0.68rem;
+  font-family: 'Funnel Display', sans-serif;
+  border: var(--stroke) solid var(--accent2-stroke);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  letter-spacing: 0.06em;
+  background: transparent;
+  color: var(--ink);
   vertical-align: middle;
   margin-left: 4px;
 }
 .wk-badge-pending {
-  background: #aaa;
+  opacity: 0.45;
 }
 
 /* WK level in vocab table */
 .wk-cell { text-align: center; }
 .wk-badge-sm {
-  font-size: 0.62rem;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: #00a0de;
-  color: #fff;
-  font-weight: 700;
+  font-size: 0.65rem;
+  font-family: 'Funnel Display', sans-serif;
+  border: var(--stroke) solid var(--accent2-stroke);
+  border-radius: var(--radius-pill);
+  padding: 2px 7px;
+  letter-spacing: 0.06em;
+  background: transparent;
+  color: var(--ink);
 }
 
 /* ── Reader panel ───────────────────────────────────────────── */
