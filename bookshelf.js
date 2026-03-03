@@ -178,7 +178,7 @@ function renderVocabTable(entry) {
       <td class="reading-cell">${shelfEsc(w.reading)}</td>
       <td class="meaning-cell">${shelfEsc(w.meaning)}</td>
       ${w.jlpt ? '<td class="jlpt-cell"><span class="jlpt-badge jlpt-sm">' + w.jlpt.toUpperCase() + '</span></td>' : '<td class="jlpt-cell">—</td>'}
-      + (w.wk_level != null ? '<td class="wk-cell"><span class="wk-badge-sm">L' + w.wk_level + '</span></td>' : '<td class="wk-cell">—</td>')
+      ${w.wk_level != null ? '<td class="wk-cell"><span class="wk-badge-sm">L' + w.wk_level + '</span></td>' : '<td class="wk-cell">—</td>'}
       <td class="action-cell"><button class="del-btn" onclick="removeShelfWord('${entry.id}', ${realIdx})" title="Remove">✕</button></td>
     </tr>`;
   }).join('');
