@@ -126,12 +126,15 @@ h2 {
 .topbar {
   position: sticky;
   top: 0;
+  left: 0;
   z-index: 50;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding: 14px 22px;
+  width: 100vw;
+  box-sizing: border-box;
   background: var(--accent);
   border-bottom: var(--stroke-strong) solid var(--border-strong);
 }
@@ -175,10 +178,14 @@ h2 {
 
 /* ── NAV (filled — intentional) ─────────────────── */
 .nav-wrap {
-  position: relative;
+  position: sticky;
+  left: 0;
+  width: 100vw;
+  box-sizing: border-box;
   overflow: hidden;
   background: color-mix(in srgb, var(--accent) 55%, var(--bg) 45%);
   border-bottom: var(--stroke) solid var(--border-strong);
+  z-index: 49;
 }
 nav {
   display: flex;
