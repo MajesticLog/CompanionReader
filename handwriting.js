@@ -26,10 +26,12 @@ function hwNowMs() { return Math.round(performance.now()); }
 function hwResizeCanvas(canvas) {
   if (!canvas) return;
   const wrap = canvas.parentElement;
-  // Use the card width minus padding; fall back to fixed size
-  const w = Math.max(200, (wrap ? wrap.clientWidth - 48 : 0) || parseInt(canvas.getAttribute('width') || '420'));
+  // Cap width to viewport to prevent horizontal overflow on mobile
+  const maxW = window.innerWidth - 32; // 16px margin each side
+  const wrapW = wrap ? wrap.clientWidth - 32 : 0;
+  const w = Math.min(maxW, Math.max(200, wrapW || parseInt(canvas.getAttribute('width') || '420')));
   const h = parseInt(canvas.getAttribute('height') || '350');
-  if (canvas.width === w && canvas.height === h) return; // no change needed
+  if (canvas.width === w && canvas.height === h) return;
   canvas.width  = w;
   canvas.height = h;
   canvas.style.width  = w + 'px';
@@ -136,13 +138,6 @@ function hwEnd(slot) {
   if (!st || !st.drawing) return;
   st.drawing = false;
   st.ctx.beginPath(); // reset path so next stroke starts fresh
-
-  // Auto-recognize 800ms after the user stops drawing
-  clearTimeout(hwRecognizeTimers[slot]);
-  hwRecognizeTimers[slot] = setTimeout(() => {
-    const usable = (st.strokes || []).filter(s => s && s.length >= 2);
-    if (usable.length) hwRecognize(slot);
-  }, 800);
 }
 
 function hwMove(slot, e) {
@@ -288,7 +283,6 @@ function hwRenderCandidates(outEl, candidates) {
 }
 
 let hwSuggestTimer = null;
-let hwRecognizeTimers = {}; // debounce per slot
 function hwSuggest() {
   clearTimeout(hwSuggestTimer);
   hwSuggestTimer = setTimeout(async () => {

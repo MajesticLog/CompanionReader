@@ -342,6 +342,7 @@ canvas {
   cursor: crosshair;
   touch-action: none;
   pointer-events: auto;
+  max-width: 100%;
 }
 #writing-canvas-1, #writing-canvas-2 {
   pointer-events: auto !important;
