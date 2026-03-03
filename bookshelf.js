@@ -38,13 +38,13 @@ function starHtml(rating) {
   return out;
 }
 
-// ── Render shelf list (left column) ───────────────
+// ── Render shelf list as dropdown ─────────────────
 function renderShelf() {
   const list = document.getElementById('shelf-list');
   if (!list) return;
 
   if (!shelf.length) {
-    list.innerHTML = '<p class="status-msg" style="padding:12px">No books yet. Add one above.</p>';
+    list.innerHTML = '<p class="status-msg">No books yet. Add one above.</p>';
     return;
   }
 
@@ -53,31 +53,32 @@ function renderShelf() {
   shelf.forEach(e => { (groups[e.status] || groups.wishlist).push(e); });
 
   const order = ['reading', 'paused', 'finished', 'wishlist'];
-  list.innerHTML = '';
+
+  const select = document.createElement('select');
+  select.className = 'shelf-select';
+  select.innerHTML = '<option value="">— Select a book —</option>';
 
   order.forEach(status => {
     const entries = groups[status];
     if (!entries.length) return;
-
-    const header = document.createElement('div');
-    header.className = 'shelf-group-label';
-    header.textContent = STATUS_LABELS[status];
-    list.appendChild(header);
-
+    const group = document.createElement('optgroup');
+    group.label = STATUS_LABELS[status];
     entries.forEach(entry => {
-      const item = document.createElement('div');
-      item.className = 'shelf-item' + (activeShelfId === entry.id ? ' active' : '');
-      item.innerHTML = `
-        <div class="shelf-item-title">${shelfEsc(entry.title)}</div>
-        <div class="shelf-item-meta">
-          ${entry.author ? `<span>${shelfEsc(entry.author)}</span>` : ''}
-          <span class="shelf-item-stars">${'★'.repeat(entry.rating || 0)}${'☆'.repeat(5 - (entry.rating || 0))}</span>
-          <span class="shelf-vocab-count">${entry.vocab.length} words</span>
-        </div>`;
-      item.onclick = () => openShelfEntry(entry.id);
-      list.appendChild(item);
+      const opt = document.createElement('option');
+      opt.value = entry.id;
+      opt.textContent = entry.title + (entry.vocab.length ? '  (' + entry.vocab.length + ' words)' : '');
+      if (entry.id === activeShelfId) opt.selected = true;
+      group.appendChild(opt);
     });
+    select.appendChild(group);
   });
+
+  select.onchange = () => {
+    if (select.value) openShelfEntry(select.value);
+  };
+
+  list.innerHTML = '';
+  list.appendChild(select);
 }
 
 // ── Open entry in detail pane ──────────────────────
@@ -169,30 +170,21 @@ function renderVocabTable(entry) {
     return `<p class="status-msg" style="margin:0">No words match "<em>${shelfEsc(shelfVocabFilter)}</em>".</p>`;
   }
 
-  const hasWk = !!localStorage.getItem('wk-token');
   let rows = words.map((w, i) => {
+    // find real index for deletion
     const realIdx = entry.vocab.indexOf(w);
-    const jlptCell = w.jlpt
-      ? `<td class="jlpt-cell"><span class="jlpt-badge jlpt-sm">${w.jlpt.toUpperCase()}</span></td>`
-      : '<td class="jlpt-cell">—</td>';
-    const wkCell = hasWk
-      ? (w.wk_level != null
-          ? `<td class="wk-cell"><span class="wk-badge-sm">L${w.wk_level}</span></td>`
-          : '<td class="wk-cell"><span title="Not in WaniKani curriculum">—</span></td>')
-      : '';
     return `<tr>
       <td class="kanji-cell">${shelfEsc(w.word)}</td>
       <td class="reading-cell">${shelfEsc(w.reading)}</td>
       <td class="meaning-cell">${shelfEsc(w.meaning)}</td>
-      ${jlptCell}
-      ${wkCell}
+      ${w.jlpt ? '<td class="jlpt-cell"><span class="jlpt-badge jlpt-sm">' + w.jlpt.toUpperCase() + '</span></td>' : '<td class="jlpt-cell">—</td>'}
+      + (w.wk_level != null ? '<td class="wk-cell"><span class="wk-badge-sm">L' + w.wk_level + '</span></td>' : '<td class="wk-cell">—</td>')
       <td class="action-cell"><button class="del-btn" onclick="removeShelfWord('${entry.id}', ${realIdx})" title="Remove">✕</button></td>
     </tr>`;
   }).join('');
 
-  const wkHeader = hasWk ? '<th title="WaniKani level — shown only for words in WK curriculum">WK</th>' : '';
-  return `<div class="words-table-wrap"><table class="words-table">
-    <thead><tr><th>Word</th><th>Reading</th><th>Meaning</th><th>JLPT</th>${wkHeader}<th></th></tr></thead>
+  return `<table class="words-table">
+    <thead><tr><th>Word</th><th>Reading</th><th>Meaning</th><th>JLPT</th><th>WK</th><th></th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
