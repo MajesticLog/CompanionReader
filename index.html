@@ -60,7 +60,7 @@
 <div class="canvas-controls">
 <div class="brush-row">
 <span>Size</span>
-<input id="brush-size" max="40" min="1" type="range" value="10"/>
+<input id="brush-size" max="40" min="1" type="range" value="10" oninput="this.style.setProperty('--val', ((this.value-this.min)/(this.max-this.min)*100)+'%');" style="--val:22.5%;"/>
 <input id="brush-color" type="color" value="#1a1410"/>
 </div>
 <button class="btn btn-sm btn-outline" onclick="hwClear(1)">Clear</button>
