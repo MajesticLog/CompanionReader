@@ -100,15 +100,16 @@
 /* Coffee theme — light text on dark espresso topbar */
 :root[data-theme="coffee"] .topbar h1,
 :root[data-theme="coffee"] .topbar-right,
-:root[data-theme="coffee"] .tagline,
-:root[data-theme="coffee"] .sync-btn,
-:root[data-theme="coffee"] .wk-connect-btn {
+:root[data-theme="coffee"] .tagline {
   color: #EDE6CE;
 }
-:root[data-theme="coffee"] .sync-btn,
-:root[data-theme="coffee"] .wk-connect-btn {
-  border-color: rgba(237,230,206,0.45) !important;
+:root[data-theme="coffee"] .topbar-right .btn {
   color: #EDE6CE !important;
+  border-color: rgba(237,230,206,0.50) !important;
+  background: transparent !important;
+}
+:root[data-theme="coffee"] .topbar-right .btn:hover {
+  background: rgba(237,230,206,0.12) !important;
 }
 :root[data-theme="coffee"] .theme-dot {
   border-color: rgba(237,230,206,0.5);
