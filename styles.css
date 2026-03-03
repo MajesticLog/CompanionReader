@@ -255,8 +255,11 @@ input[type=range] {
   border: none;
   border-radius: 0;
   padding: 0;
-  accent-color: var(--accent-stroke);
+  accent-color: var(--ink);
   width: 80px;
+}
+#panel-writing input[type=range] {
+  accent-color: var(--accent-stroke);
 }
 input[type=color] {
   width: 32px;
