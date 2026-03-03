@@ -93,6 +93,7 @@ body {
   color: var(--ink);
   background: var(--bg);
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* Japanese text */
@@ -133,8 +134,6 @@ h2 {
   justify-content: space-between;
   gap: 16px;
   padding: 14px 22px;
-  width: 100vw;
-  box-sizing: border-box;
   background: var(--accent);
   border-bottom: var(--stroke-strong) solid var(--border-strong);
 }
@@ -178,14 +177,10 @@ h2 {
 
 /* ── NAV (filled — intentional) ─────────────────── */
 .nav-wrap {
-  position: sticky;
-  left: 0;
-  width: 100vw;
-  box-sizing: border-box;
+  position: relative;
   overflow: hidden;
   background: color-mix(in srgb, var(--accent) 55%, var(--bg) 45%);
   border-bottom: var(--stroke) solid var(--border-strong);
-  z-index: 49;
 }
 nav {
   display: flex;
@@ -215,7 +210,7 @@ nav button.active        { opacity: 1; border-color: var(--ink); font-weight: 50
 nav button:focus-visible { outline: none; box-shadow: var(--ring) !important; }
 
 /* ── Main layout ─────────────────────────────────── */
-main { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
+main { max-width: 1100px; margin: 0 auto; padding: 28px 20px; overflow-x: hidden; }
 
 /* ── Panel visibility ────────────────────────────── */
 .panel { display: none; }
@@ -1172,7 +1167,7 @@ button:focus-visible, .btn:focus-visible { outline: none; box-shadow: var(--ring
   gap: 12px;
   flex-wrap: wrap;
 }
-.shelf-modal-row .modal-section { min-width: 140px; }
+.shelf-modal-row .modal-section { min-width: 0; }
 
 
 
@@ -1272,7 +1267,7 @@ td.jlpt-cell { white-space: nowrap; }
   /* ── Books / Shelf ──────────────────────────────────── */
   .shelf-layout    { grid-template-columns: 1fr; gap: 12px; }
   .shelf-add-bar   { flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-  .shelf-add-bar input { width: 100%; min-width: 0; }
+  .shelf-add-bar input { width: 100%; min-width: 0 !important; }
   .shelf-sidebar   { max-height: 220px; overflow-y: auto; }
   .shelf-detail    { min-height: 0; }
 
@@ -1614,9 +1609,14 @@ input[type="checkbox"]:focus-visible {
   #sources-modal .modal-box a { color: var(--accent-stroke); }
 
   /* Vocab table — horizontal scroll so it doesn't squeeze */
-  .words-table-wrap,
-  .shelf-detail     { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .words-table      { min-width: 460px; }
+  /* vocab table adapts to screen width on mobile */
+  .words-table { table-layout: fixed; width: 100%; }
+  .words-table th, .words-table td { word-break: break-word; }
+  .words-table td:nth-child(1) { width: 18%; }
+  .words-table td:nth-child(2) { width: 20%; }
+  .words-table td:nth-child(3) { width: 38%; max-width: none; white-space: normal; }
+  .words-table td:nth-child(4) { width: 14%; }
+  .words-table td:nth-child(5) { width: 10%; }
 
   /* Reader article list thumbnails — smaller on mobile */
   .reader-article-thumb { width: 48px; height: 36px; }
