@@ -39,7 +39,7 @@
   --fc-back-ink: var(--bg);
 }
 
-/* Theme 2 — Strawberry Matcha */
+/* Theme 2 — Strawberry Matcha (commented out — too close to Flowers)
 :root[data-theme="joyful"] {
   --bg:             #F5F2EC;       /* warm latte cream */
   --accent:         #C8B8C8;       /* dusty rose-lavender — the strawberry milk layer */
@@ -56,7 +56,7 @@
 
   --fc-back-bg:  #2C2820;
   --fc-back-ink: #F5F2EC;
-}
+} */
 
 /* Theme 3 — Plum */
 :root[data-theme="plum"] {
@@ -79,7 +79,7 @@
 
 /* Theme 4 — Coffee */
 :root[data-theme="coffee"] {
-  --bg:             #E6E0C4;       /* parchment cream */
+  --bg:             #EDE6CE;       /* warmer parchment, less green */
   --accent:         #6B3C2E;       /* espresso — topbar & nav */
   --accent-2:       #86ABCB;       /* dusty blue */
   --ink:            #2E1F18;       /* very dark espresso */
@@ -90,11 +90,30 @@
   --accent-stroke:  #E5A2A0;       /* blush rose — badges, links, highlights */
   --accent2-stroke: #86ABCB;       /* dusty blue — secondary badges */
 
+  --topbar-ink:     #EDE6CE;       /* cream text on espresso topbar */
+
   --ring: 0 0 0 3px rgba(229,162,160,0.30);
 
   --fc-back-bg:  #2E1F18;
-  --fc-back-ink: #E6E0C4;
+  --fc-back-ink: #EDE6CE;
 }
+/* Coffee theme — light text on dark espresso topbar */
+:root[data-theme="coffee"] .topbar h1,
+:root[data-theme="coffee"] .topbar-right,
+:root[data-theme="coffee"] .tagline,
+:root[data-theme="coffee"] .sync-btn,
+:root[data-theme="coffee"] .wk-connect-btn {
+  color: #EDE6CE;
+}
+:root[data-theme="coffee"] .sync-btn,
+:root[data-theme="coffee"] .wk-connect-btn {
+  border-color: rgba(237,230,206,0.45) !important;
+  color: #EDE6CE !important;
+}
+:root[data-theme="coffee"] .theme-dot {
+  border-color: rgba(237,230,206,0.5);
+}
+
 
 
 /* ── Reset ────────────────────────────────────────── */
