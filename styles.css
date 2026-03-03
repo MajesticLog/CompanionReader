@@ -1397,30 +1397,34 @@ td.jlpt-cell { white-space: nowrap; }
 .modal-close:hover { opacity: 1; }
 /* ── Themed checkbox (furigana toggle & others) ─────────────────────────────── */
 input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  border: var(--stroke-strong) solid var(--border-strong);
-  border-radius: 4px;
-  background: transparent;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  display: inline-block !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  max-width: 18px !important;
+  flex: none !important;
+  padding: 0 !important;
+  border: var(--stroke-strong) solid var(--border-strong) !important;
+  border-radius: 5px !important;
+  background: transparent !important;
   cursor: pointer;
   position: relative;
-  flex-shrink: 0;
   vertical-align: middle;
   transition: background 120ms ease, border-color 120ms ease;
 }
 input[type="checkbox"]:checked {
-  background: var(--accent-stroke);
-  border-color: var(--accent-stroke);
+  background: var(--accent-stroke) !important;
+  border-color: var(--accent-stroke) !important;
 }
 input[type="checkbox"]:checked::after {
   content: '';
   position: absolute;
-  left: 3px;
+  left: 4px;
   top: 1px;
   width: 5px;
-  height: 9px;
+  height: 10px;
   border: 2px solid var(--bg);
   border-top: none;
   border-left: none;
