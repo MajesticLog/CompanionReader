@@ -139,11 +139,20 @@ function hwStart(slot, e) {
   st.strokes.push(st.currentStroke);
 }
 
+const hwRecognizeTimers = {};
+
 function hwEnd(slot) {
   const st = hw[slot];
   if (!st || !st.drawing) return;
   st.drawing = false;
-  st.ctx.beginPath(); // reset path so next stroke starts fresh
+  st.ctx.beginPath();
+
+  // Auto-recognize 800ms after user stops drawing
+  clearTimeout(hwRecognizeTimers[slot]);
+  hwRecognizeTimers[slot] = setTimeout(() => {
+    const usable = (st.strokes || []).filter(s => s && s.length >= 2);
+    if (usable.length) hwRecognize(slot);
+  }, 800);
 }
 
 function hwMove(slot, e) {
