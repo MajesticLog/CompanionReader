@@ -198,11 +198,13 @@ function hwClearQuery() {
   if (out) out.innerHTML = '<p class="status-msg">Write kanji (or type) to see word suggestions.</p>';
 }
 
-function hwAddToQuery(ch) {
+function hwAddToQuery(ch, slot) {
   const q = document.getElementById('hw-query');
   if (!q) return;
   q.value = (q.value || '') + ch;
   hwSuggest();
+  // Auto-clear the canvas that produced this candidate
+  if (slot != null) hwClear(slot);
 }
 
 async function hwRecognize(slot) {
@@ -257,7 +259,7 @@ async function hwRecognize(slot) {
       return;
     }
     if (status) status.textContent = 'Click a candidate to add it.';
-    hwRenderCandidates(out, cands.slice(0, 12));
+    hwRenderCandidates(out, cands.slice(0, 12), slot);
   } catch (err) {
     if (status) status.textContent = 'Recognition failed (network or worker error).';
     console.error('[hwRecognize]', err);
@@ -286,7 +288,7 @@ function hwExtractCandidates(resp) {
   return singles.length ? [...singles, ...multi] : multi;
 }
 
-function hwRenderCandidates(outEl, candidates) {
+function hwRenderCandidates(outEl, candidates, slot) {
   if (!outEl) return;
   outEl.innerHTML = '';
   candidates.forEach(ch => {
@@ -296,7 +298,7 @@ function hwRenderCandidates(outEl, candidates) {
     b.style.fontFamily = "'Kosugi Maru', sans-serif";
     b.style.fontSize = '1.1rem';
     b.textContent = ch;
-    b.onclick = () => hwAddToQuery(ch);
+    b.onclick = () => hwAddToQuery(ch, slot);
     outEl.appendChild(b);
   });
 }
