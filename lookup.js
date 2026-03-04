@@ -63,7 +63,7 @@ function renderResults(entries) {
       <div class="word-header">
         <span class="kanji-large">${escapeHtml(word)}</span>
         <span class="reading">${word !== reading ? escapeHtml(reading) : ''}</span>
-        ${jlpt ? `<span class="jlpt-badge">${escapeHtml(jlpt.toUpperCase())}</span>` : ''}
+        ${jlpt ? `<span class="jlpt-badge">${escapeHtml(jlpt.replace(/^jlpt-/i, '').toUpperCase())}</span>` : ''}
         ${getWkBadge(word)}
       </div>
       <div class="meanings">${escapeHtml(meanings)}</div>
