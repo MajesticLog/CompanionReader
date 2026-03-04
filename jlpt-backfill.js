@@ -27,7 +27,7 @@
         const k = await r.json();
         // kanjiapi returns jlpt as a NUMBER e.g. 1,2,3,4 not "N1"
         if (k.jlpt == null) continue;
-        vocab.jlpt = 'n' + k.jlpt;
+        vocab.jlpt = 'jlpt-n' + k.jlpt;
         updated++;
       } catch (_) {}
 
