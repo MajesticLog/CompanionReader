@@ -575,7 +575,7 @@ async function kkRenderYoji(item) {
   const target=item.yoji[pos];
 
   // Build display: e.g. pos=2 → 暮雲＿＿春 (but blank shown as ＿＿ not □)
-  const displayed=item.yoji.split('').map((c,i)=>i===pos?'＿＿':c).join('');
+  const displayed=item.yoji.split('').map((c,i)=>i===pos?'＿':c).join('');
 
   // Build reading hint: blank the 2 kana at corresponding position
   // Each kanji ≈ 2 kana in reading (rough split)
@@ -677,11 +677,17 @@ function kkCheckChoiceStr(btn, chosen, correct) {
   });
   const isRight=chosen===correct;
   if (!isRight&&kk.current.type==='yoji') {
-    const fb=document.createElement('div'); fb.className='kk-feedback';
+    // Wrong: show answer + manual next button (no auto-advance so user can read)
+    kk.score.wrong++;
+    kk.wrongItems.push(kk.current);
+    const fb=document.createElement('div'); fb.className='kk-feedback kk-yoji-wrong-fb';
     fb.innerHTML=`<span class="kk-fb-wrong">✗ 不正解</span>
       <div class="kk-yoji-answer" style="margin-top:8px;font-size:1.8rem">${kk.current.yoji}</div>
-      ${kk.current.meaning?`<div class="kk-yoji-meaning" style="margin-top:4px">${kk.current.meaning.split('\n')[0]}</div>`:''}`;
+      <div class="kk-yoji-reading" style="margin-top:2px;opacity:0.7">${kk.current.reading||''}</div>
+      ${kk.current.meaning?`<div class="kk-yoji-meaning" style="margin-top:4px">${kk.current.meaning.split('\n')[0]}</div>`:''}
+      <button class="btn btn-sm btn-outline kk-yoji-next-btn" onclick="kkNext()" type="button" style="margin-top:14px">次へ →</button>`;
     document.getElementById('kk-question-card')?.appendChild(fb);
+    return; // don't call kkMark — scoring already handled above
   }
   kkMark(isRight,true);
 }
