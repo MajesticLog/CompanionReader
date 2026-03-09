@@ -138,16 +138,16 @@ async function kkBuildQueue(level, section) {
 
   // For bushu/okurigana: actual pre-fetch so we only queue kanji with valid data.
   if (section==='bushu' || section==='okurigana') {
-    return await kkBuildFilteredQueue(pool, section);
+    return await kkBuildFilteredQueue(pool, section, count);
   }
 
   const n=['kakusuu','taigi'].includes(section)?15:20;
-  return kkShuffle(pool).slice(0,n).map(k=>({type:section,kanji:k}));
+  return kkShuffle(pool).slice(0,count).map(k=>({type:section,kanji:k}));
 }
 
 // Pre-fetch candidates and keep only those with the required data field.
 // Shows a progress counter while loading so the user knows it's working.
-async function kkBuildFilteredQueue(pool, section) {
+async function kkBuildFilteredQueue(pool, section, count=15) {
   const TARGET = 15;
   const candidates = kkShuffle(pool).slice(0, 80); // fetch up to 80 to find 15 valid
 
@@ -183,6 +183,10 @@ function kkRenderSetup() {
     <button class="kk-section-btn ${kk.section===s?'active':''}" onclick="kkSelectSection('${s}')" type="button">
       <span class="kk-section-jp">${SECTION_LABELS[s]}</span>
     </button>`).join('');
+  const countBtns=[5,10,20,50].map(n=>
+    `<button class="kk-count-btn ${kk.sessionSize===n?'active':''}" onclick="kkSetSize(${n})" type="button">${n}</button>`
+  ).join('');
+
   el.innerHTML=`
     <div class="kk-setup-inner">
       <div class="kk-level-row">
@@ -191,8 +195,14 @@ function kkRenderSetup() {
       </div>
       <div class="kk-section-label kk-label">問題の種類</div>
       <div class="kk-section-grid">${sectionBtns}</div>
-      <p class="status-msg kk-hint">${kk.section?'':'問題の種類を選んでください。'}</p>
-    </div>`;
+      ${kk.section ? `
+        <div class="kk-count-row">
+          <span class="kk-label kk-count-label">問題数</span>
+          <div class="kk-count-btns">${countBtns}</div>
+        </div>
+        <button class="btn kk-start-btn" onclick="kkStartQuiz()" type="button">練習開始 →</button>
+      ` : '<p class="status-msg kk-hint">問題の種類を選んでください。</p>'}
+    </div>\`;
 }
 
 function kkChangeLevel(val) { kk.level=val; kk.section=null; kkRenderSetup(); }
@@ -220,14 +230,16 @@ async function kkStartQuiz() {
 /* ── Shared shell (with quit button) ──────────────── */
 // FIX 2: quit button in every quiz shell
 function kkShell(innerHtml) {
-  const done=kk.idx, total=kk.queue.length, pct=total?(done/total*100):0;
+  const cleared = kk.sessionTotal - kk.pending.length;
+  const pct = kk.sessionTotal ? (cleared / kk.sessionTotal * 100) : 0;
+  const remaining = kk.pending.length;
   return `
     <div class="kk-quiz-inner">
       <div class="kk-quiz-toprow">
         <div class="kk-progress-bar"><div class="kk-progress-fill" style="width:${pct}%"></div></div>
         <button class="kk-quit-btn" onclick="kkQuit()" type="button" title="終了">✕</button>
       </div>
-      <div class="kk-counter">${done+1} / ${total}
+      <div class="kk-counter">残り ${remaining}
         <span class="kk-score-inline">
           <span class="kk-correct-count">✓ ${kk.score.correct}</span>
           <span class="kk-wrong-count">✗ ${kk.score.wrong}</span>
@@ -251,8 +263,8 @@ const KK_PROMPTS = {
 /* ── Main render dispatcher ────────────────────────── */
 async function kkRenderQuestion() {
   const quizEl=document.getElementById('kk-quiz'); if (!quizEl) return;
-  if (kk.idx>=kk.queue.length) { kkShowResults(); return; }
-  const item=kk.queue[kk.idx];
+  if (!kk.pending.length) { kkShowResults(); return; }
+  const item=kk.pending[0];
   kk.current=item; kk.answered=false; kk.kakiAttempts=0;
 
   if (item.type==='yoji') { await kkRenderYoji(item); return; }
@@ -518,7 +530,7 @@ function kkRenderBushu(item, data, answerEl) {
   const radical=data.radical;
   if (!radical) {
     // Skip silently — advance to next
-    setTimeout(()=>{ kk.idx++; kkRenderQuestion(); }, 0);
+    setTimeout(()=>{ kk.pending.shift(); kkRenderQuestion(); }, 0);
     return;
   }
   const COMMON=['一','人','口','手','木','水','火','山','日','月','心','女','子','土','金',
@@ -536,7 +548,7 @@ function kkRenderOkurigana(item, data, kanjiEl, answerEl) {
   const kunWithOkuri=(data.kun_readings||[]).filter(r=>r.includes('.'));
   if (!kunWithOkuri.length) {
     // Skip silently
-    setTimeout(()=>{ kk.idx++; kkRenderQuestion(); }, 0);
+    setTimeout(()=>{ kk.pending.shift(); kkRenderQuestion(); }, 0);
     return;
   }
   const pick=kunWithOkuri[Math.floor(Math.random()*kunWithOkuri.length)];
@@ -706,30 +718,44 @@ function kkStrokeChoices(correct) {
   return kkShuffle([correct,...wrong.slice(0,3)]);
 }
 
-/* ── Scoring ───────────────────────────────────────── */
+/* ── Scoring + SRS requeue ─────────────────────────── */
 function kkMark(correct, alreadyHandled=false) {
   if (!alreadyHandled) {
     document.querySelectorAll('.kk-self-check .btn').forEach(b=>b.disabled=true);
     document.querySelectorAll('.kk-type-input').forEach(i=>i.disabled=true);
     document.querySelectorAll('.kk-submit-btn').forEach(b=>b.disabled=true);
   }
-  if (correct) kk.score.correct++;
-  else { kk.score.wrong++; if (kk.current) kk.wrongItems.push(kk.current); }
-  setTimeout(()=>{ kk.idx++; kkRenderQuestion(); }, !correct?2800:alreadyHandled?1000:700);
+  // Remove current item from front of pending
+  const item = kk.pending.shift();
+  if (correct) {
+    kk.score.correct++;
+    // Correct: item cleared, don't requeue
+  } else {
+    kk.score.wrong++;
+    if (item) kk.wrongItems.push(item);
+    // Wrong: requeue at position 3–5 from front (WK-style, not immediately back)
+    if (item) {
+      const insertAt = Math.min(3 + Math.floor(Math.random()*3), kk.pending.length);
+      kk.pending.splice(insertAt, 0, item);
+    }
+  }
+  setTimeout(()=>{ kkRenderQuestion(); }, !correct?2800:alreadyHandled?1000:700);
 }
-function kkNext() { kk.idx++; kkRenderQuestion(); }
+// kkNext used by manual "next" buttons (yoji wrong answer, etc.)
+function kkNext() { kkRenderQuestion(); }
 
 /* ── Results ───────────────────────────────────────── */
 function kkShowResults() {
   const quizEl=document.getElementById('kk-quiz'); if (!quizEl) return;
   const total=kk.score.correct+kk.score.wrong, pct=total>0?Math.round(kk.score.correct/total*100):0;
+  // unique items is sessionTotal; some may have been answered multiple times
   const grade=pct>=80?'合格！':pct>=60?'もう少し':'要復習';
   const gradeClass=pct>=80?'kk-pass':pct>=60?'kk-near':'kk-fail';
   const wrongList=kk.wrongItems.length?`<div class="kk-wrong-list"><div class="kk-label" style="margin-bottom:8px">間違えた問題</div><div class="kk-wrong-chips">${kk.wrongItems.map(item=>`<span class="kk-wrong-chip">${item.kanji||item.yoji||'?'}</span>`).join('')}</div></div>`:'';
   quizEl.innerHTML=`
     <div class="kk-results-inner">
       <div class="kk-results-grade ${gradeClass}">${grade}</div>
-      <div class="kk-results-score">${kk.score.correct} <span class="kk-results-denom">/ ${total}</span></div>
+      <div class="kk-results-score">${kk.sessionTotal} <span class="kk-results-denom">問クリア</span></div>
       <div class="kk-results-pct">${pct}%</div>
       <div class="kk-results-detail"><span class="kk-correct-count">○ ${kk.score.correct}</span><span class="kk-wrong-count">✗ ${kk.score.wrong}</span></div>
       ${wrongList}
@@ -756,7 +782,7 @@ function initKanken() {
 
 /* ── Expose ─────────────────────────────────────────── */
 window.initKanken=initKanken; window.kkChangeLevel=kkChangeLevel; window.kkSelectSection=kkSelectSection;
-window.kkStartQuiz=kkStartQuiz; window.kkQuit=kkQuit; window.kkMark=kkMark; window.kkNext=kkNext;
+window.kkStartQuiz=kkStartQuiz; window.kkSetSize=kkSetSize; window.kkQuit=kkQuit; window.kkMark=kkMark; window.kkNext=kkNext;
 window.kkSubmitYomi=kkSubmitYomi; window.kkSubmitOkuri=kkSubmitOkuri; window.kkSubmitTaigi=kkSubmitTaigi;
 window.kkKakiClear=kkKakiClear; window.kkKakiSubmit=kkKakiSubmit;
 window.kkCheckChoice=kkCheckChoice; window.kkCheckChoiceStr=kkCheckChoiceStr;
