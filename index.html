@@ -2,14 +2,6 @@
 
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-T4VFKGJ6XC"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-T4VFKGJ6XC');
-</script>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>積読フレンド ♥ </title>
@@ -42,6 +34,7 @@
 <button onclick="showPanel('radicals', this)">部首 Radicals</button>
 <button onclick="showPanel('flashcards', this)">🃏 Flashcards</button>
 <button onclick="showPanel('reader', this)">📰 Reader</button>
+<button onclick="showPanel('kanken', this)">🈶 漢検</button>
 </nav></div>
 <main>
 <!-- ── LOOKUP PANEL ── -->
@@ -318,6 +311,11 @@
     </div>
   </div>
 </div>
+
+<!-- ── KANKEN PANEL ── -->
+<div class="panel" id="panel-kanken">
+  <div id="kk-root"></div>
+</div>
 </main>
 <script defer="" src="state.js"></script>
   <script defer="" src="sync.js"></script>
@@ -331,6 +329,7 @@
 <script defer="" src="wanikani.js"></script>
 <script defer="" src="preloaded-books.js"></script>
 <script defer="" src="reader.js"></script>
+<script defer="" src="kanken.js"></script>
 <script defer="" src="init.js"></script>
 
 <!-- ── WANIKANI SETTINGS MODAL ── -->
@@ -429,19 +428,6 @@
         <p style="margin:0 0 16px">
           <a href="https://fonts.google.com/specimen/Kosugi+Maru" target="_blank" rel="noreferrer">Kosugi Maru</a> &amp;
           <a href="https://fonts.google.com/specimen/Funnel+Display" target="_blank" rel="noreferrer">Funnel Display</a> via Google Fonts
-        </p>
-
-        <p style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;margin:0 0 8px">漢字検定 (Kanken Practice)</p>
-        <p style="margin:0 0 16px">
-          <a href="https://kanjivg.tagaini.net" target="_blank" rel="noreferrer">KanjiVG</a> — SVG stroke data by Ulrich Apel, Apache 2.0 licence, served via jsDelivr CDN<br>
-          <a href="https://kanjiapi.dev" target="_blank" rel="noreferrer">KanjiAPI</a> — readings, radical &amp; stroke-count data<br>
-          四字熟語 list compiled from public Kanken study materials (levels 5–準1級)
-        </p>
-
-        <p style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;margin:0 0 8px">JLPT Vocabulary</p>
-        <p style="margin:0 0 16px">
-          N2 vocabulary list (~4,960 entries) sourced from public JLPT study data.<br>
-          Kanji &amp; reading data via <a href="https://kanjiapi.dev" target="_blank" rel="noreferrer">KanjiAPI</a>
         </p>
 
         <p style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;margin:0 0 8px">Built with</p>
