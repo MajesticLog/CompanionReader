@@ -616,7 +616,7 @@ function kkMark(correct, alreadyHandled=false) {
     document.querySelectorAll('.kk-submit-btn').forEach(b=>b.disabled=true);
   }
   if (correct) kk.score.correct++; else { kk.score.wrong++; if (kk.current) kk.wrongItems.push(kk.current); }
-  setTimeout(()=>{ kk.idx++; kkRenderQuestion(); }, alreadyHandled?1000:700);
+  setTimeout(()=>{ kk.idx++; kkRenderQuestion(); }, !correct ? 2800 : alreadyHandled ? 1000 : 700);
 }
 
 function kkNext() { kk.idx++; kkRenderQuestion(); }
