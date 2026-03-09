@@ -136,34 +136,39 @@ async function kkBuildQueue(level, section) {
     return kkShuffle(yojiPool).slice(0,20).map(item=>({type:'yoji',...item}));
   }
 
-  // For bushu and okurigana: pre-filter using cache to avoid データなし cards.
-  // We fetch a sample, then filter, top up if needed.
-  if (section==='bushu') {
-    return await kkPrefilterQueue(pool, 15, k => {
-      const d=kk.kanjiCache[k];
-      return d===undefined || (d && d.radical); // undefined = uncached (allow), null/no radical = skip
-    }, k => ({type:'bushu', kanji:k}));
-  }
-  if (section==='okurigana') {
-    return await kkPrefilterQueue(pool, 15, k => {
-      const d=kk.kanjiCache[k];
-      if (d===undefined) return true; // uncached, allow
-      return d && (d.kun_readings||[]).some(r=>r.includes('.'));
-    }, k => ({type:'okurigana', kanji:k}));
+  // For bushu/okurigana: actual pre-fetch so we only queue kanji with valid data.
+  if (section==='bushu' || section==='okurigana') {
+    return await kkBuildFilteredQueue(pool, section);
   }
 
   const n=['kakusuu','taigi'].includes(section)?15:20;
   return kkShuffle(pool).slice(0,n).map(k=>({type:section,kanji:k}));
 }
 
-// Build a queue of `target` items, filtering by predicate.
-// Tries up to 3 passes through shuffled pool before giving up.
-async function kkPrefilterQueue(pool, target, predicate, mapper) {
-  const shuffled=kkShuffle(pool);
-  const result=[];
-  for (const k of shuffled) {
-    if (result.length>=target) break;
-    if (predicate(k)) result.push(mapper(k));
+// Pre-fetch candidates and keep only those with the required data field.
+// Shows a progress counter while loading so the user knows it's working.
+async function kkBuildFilteredQueue(pool, section) {
+  const TARGET = 15;
+  const candidates = kkShuffle(pool).slice(0, 80); // fetch up to 80 to find 15 valid
+
+  const quizEl = document.getElementById('kk-quiz');
+  const showProgress = (n) => {
+    if (quizEl) quizEl.innerHTML = `<p class="status-msg" style="padding:32px;text-align:center">データを確認中… ${n} / ${TARGET}</p>`;
+  };
+  showProgress(0);
+
+  const result = [];
+  for (const k of candidates) {
+    if (result.length >= TARGET) break;
+    const data = await kkFetchKanji(k);
+    if (!data) continue;
+    if (section === 'bushu' && data.radical) {
+      result.push({ type: 'bushu', kanji: k });
+      showProgress(result.length);
+    } else if (section === 'okurigana' && (data.kun_readings||[]).some(r => r.includes('.'))) {
+      result.push({ type: 'okurigana', kanji: k });
+      showProgress(result.length);
+    }
   }
   return result;
 }
