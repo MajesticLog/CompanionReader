@@ -10,7 +10,7 @@ function showPanel(id, btn) {
   if (btn) {
     btn.classList.add('active');
   } else {
-    const map = { lookup: 0, bookshelf: 1, writing: 2, radicals: 3, flashcards: 4, reader: 5 };
+    const map = { lookup: 0, bookshelf: 1, writing: 2, radicals: 3, flashcards: 4, reader: 5, kanken: 6 };
     const i = map[id];
     const btns = document.querySelectorAll('nav button');
     if (Number.isInteger(i) && btns[i]) btns[i].classList.add('active');
@@ -22,6 +22,7 @@ function showPanel(id, btn) {
     requestAnimationFrame(() => requestAnimationFrame(hwResizeAll));
   } } catch(e) { console.error(e); }
   try { if (id === 'reader' && typeof initReader === 'function') initReader(); } catch(e) { console.error(e); }
+  try { if (id === 'kanken' && typeof initKanken === 'function') initKanken(); } catch(e) { console.error(e); }
   try {
     if (id === 'flashcards') {
       const setup = document.getElementById('fc-setup');

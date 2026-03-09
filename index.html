@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300;400;500;600&family=Kosugi+Maru&display=swap" rel="stylesheet"/>
 <link rel="icon" type="image/svg+xml" href="plumheart.svg"/>
   <link href="styles.css" rel="stylesheet"/>
+  <link href="kanken.css" rel="stylesheet"/>
 </head>
 <body>
 <header class="topbar">
@@ -34,6 +35,7 @@
 <button onclick="showPanel('radicals', this)">部首 Radicals</button>
 <button onclick="showPanel('flashcards', this)">🃏 Flashcards</button>
 <button onclick="showPanel('reader', this)">📰 Reader</button>
+<button onclick="showPanel('kanken', this)">🏆 漢検</button>
 </nav></div>
 <main>
 <!-- ── LOOKUP PANEL ── -->
@@ -310,6 +312,14 @@
     </div>
   </div>
 </div>
+<!-- ── KANKEN PANEL ── -->
+<div class="panel" id="panel-kanken">
+  <div class="card" style="max-width:680px;margin:0 auto">
+    <h2>漢字検定 — Kanken Practice</h2>
+    <div id="kk-setup"></div>
+    <div id="kk-quiz"></div>
+  </div>
+</div>
 </main>
 <script defer="" src="state.js"></script>
   <script defer="" src="sync.js"></script>
@@ -323,6 +333,7 @@
 <script defer="" src="wanikani.js"></script>
 <script defer="" src="preloaded-books.js"></script>
 <script defer="" src="reader.js"></script>
+<script defer="" src="kanken.js"></script>
 <script defer="" src="init.js"></script>
 
 <!-- ── WANIKANI SETTINGS MODAL ── -->
