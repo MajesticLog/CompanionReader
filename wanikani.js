@@ -62,7 +62,10 @@ async function saveWkToken() {
 }
 
 // ── Background vocab enrichment ────────────────────────────────────────────
-// After connecting WK, fetch levels for all saved vocab words that are missing wk_level
+// After connecting WK, fetch levels for all saved vocab words that are missing wk_level.
+// Cache stores: number = WK level, null = looked up but not on WK (negative cache).
+// Negative-cached words are not re-fetched unless the cache is cleared on token change.
+
 async function enrichVocabWithWk() {
   const token = localStorage.getItem('wk-token');
   if (!token) return;
@@ -71,20 +74,40 @@ async function enrichVocabWithWk() {
   try { shelf = JSON.parse(localStorage.getItem('tsundoku-shelf') || '[]'); }
   catch (_) { return; }
 
-  // Collect unique words needing WK levels
+  // Cache: { word: level (number) | null (not on WK) }
+  const cache = JSON.parse(localStorage.getItem('wk-level-cache') || '{}');
+
+  // First pass: apply any cached levels we already know about
+  let quickUpdated = 0;
+  for (const entry of shelf)
+    for (const v of (entry.vocab || []))
+      if (!v.wk_level && v.word && typeof cache[v.word] === 'number') {
+        v.wk_level = cache[v.word];
+        quickUpdated++;
+      }
+
+  if (quickUpdated) {
+    localStorage.setItem('tsundoku-shelf', JSON.stringify(shelf));
+    if (typeof renderShelfDetail === 'function') renderShelfDetail();
+    console.log(`[WK] Applied ${quickUpdated} cached WK levels.`);
+  }
+
+  // Collect words that aren't in cache at all (skip both positive & negative cached)
   const toFetch = new Set();
   for (const entry of shelf)
     for (const v of (entry.vocab || []))
-      if (!v.wk_level && v.word) toFetch.add(v.word);
+      if (!v.wk_level && v.word && !(v.word in cache)) toFetch.add(v.word);
 
   if (!toFetch.size) return;
-  console.log(`[WK] Enriching ${toFetch.size} vocab words with WaniKani levels…`);
-
-  const cache = JSON.parse(localStorage.getItem('wk-level-cache') || '{}');
+  console.log(`[WK] Fetching WK levels for ${toFetch.size} new words…`);
 
   // Batch into groups of 10 slugs per request
   const words = [...toFetch];
+  let hitRateLimit = false;
+
   for (let i = 0; i < words.length; i += 10) {
+    if (hitRateLimit) break;
+
     const batch = words.slice(i, i + 10);
     const slugs = batch.map(encodeURIComponent).join(',');
     try {
@@ -92,24 +115,39 @@ async function enrichVocabWithWk() {
         `https://api.wanikani.com/v2/subjects?types=vocabulary,kanji&slugs=${slugs}`,
         { headers: { 'Authorization': `Bearer ${token}`, 'Wanikani-Revision': '20170710' } }
       );
+
+      if (r.status === 429) {
+        console.warn('[WK] Rate limited — stopping enrichment, will retry next load.');
+        hitRateLimit = true;
+        break;
+      }
       if (!r.ok) continue;
+
       const d = await r.json();
+      const found = new Set();
       for (const subject of (d.data || [])) {
         const w = subject.data?.slug || subject.data?.characters;
         const lvl = subject.data?.level;
-        if (w && lvl != null) cache[w] = lvl;
+        if (w && lvl != null) { cache[w] = lvl; found.add(w); }
       }
+
+      // Negative-cache: words we asked about but WK didn't return
+      for (const w of batch)
+        if (!found.has(w) && !(w in cache)) cache[w] = null;
+
     } catch (_) {}
-    await new Promise(res => setTimeout(res, 200)); // 200ms between batches
+
+    // ~1.1s between batches to stay well within 60 req/min
+    await new Promise(res => setTimeout(res, 1100));
   }
 
   localStorage.setItem('wk-level-cache', JSON.stringify(cache));
 
-  // Write wk_level back into shelf vocab
+  // Write newly fetched levels back into shelf vocab
   let updated = 0;
   for (const entry of shelf) {
     for (const v of (entry.vocab || [])) {
-      if (!v.wk_level && cache[v.word] != null) {
+      if (!v.wk_level && v.word && typeof cache[v.word] === 'number') {
         v.wk_level = cache[v.word];
         updated++;
       }
