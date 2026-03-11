@@ -202,7 +202,7 @@ function kkRenderSetup() {
         </div>
         <button class="btn kk-start-btn" onclick="kkStartQuiz()" type="button">練習開始 →</button>
       ` : '<p class="status-msg kk-hint">問題の種類を選んでください。</p>'}
-    </div>\`;
+    </div>`;
 }
 
 function kkChangeLevel(val) { kk.level=val; kk.section=null; kkRenderSetup(); }
