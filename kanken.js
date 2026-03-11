@@ -108,6 +108,37 @@ async function kkFetchKanji(char) {
   } catch(e) { kk.kanjiCache[char]=null; return null; }
 }
 
+/* ── Radical map from element2kanji.json ──────────── */
+const KK_RADICALS = new Set(['一','丨','丶','丿','乙','亅','二','亠','人','儿','入','八','冂','冖','冫',
+  '几','凵','刀','力','勹','匕','匚','匸','十','卜','卩','厂','厶','又','口','囗','土','士','夂',
+  '夊','夕','大','女','子','宀','寸','小','尢','尸','屮','山','巛','工','己','巾','干','幺','广',
+  '廴','廾','弋','弓','彐','彡','彳','心','忄','戈','戸','手','扌','支','攴','攵','文','斗','斤',
+  '方','无','日','曰','月','木','欠','止','歹','殳','毋','比','毛','氏','气','水','氵','火','灬',
+  '爪','父','爻','爿','片','牙','牛','犬','犭','玄','玉','瓜','瓦','甘','生','用','田','疋','疒',
+  '癶','白','皮','皿','目','矛','矢','石','示','禸','禾','穴','立','竹','米','糸','缶','网','羊',
+  '羽','老','而','耒','耳','聿','肉','臣','自','至','臼','舌','舛','舟','艮','色','艹','虍','虫',
+  '血','行','衣','衤','襾','見','角','言','谷','豆','豕','豸','貝','赤','走','足','身','車','辛',
+  '辰','辵','邑','酉','釆','里','金','長','門','阜','隶','隹','雨','青','非','面','革','韋','韭',
+  '音','頁','風','飛','食','首','香','馬','骨','高','髟','鬥','鬯','鬲','鬼','魚','鳥','鹵','鹿',
+  '麦','麻','黄','黍','黒','黹','黽','鼎','鼓','鼠','鼻','齊','齒','龍','龜','龠',
+  '⺌','⺍','⺖','⺘','⺡','⺣','⺨','⺩','⺮','⺾','⻌','⻏','⻖']);
+async function kkLoadRadicalMap() {
+  if (kk._radicalMap) return kk._radicalMap;
+  try {
+    const r = await fetch('element2kanji.json');
+    const data = await r.json();
+    const map = {};
+    for (const [elem, kanjiList] of Object.entries(data)) {
+      if (!KK_RADICALS.has(elem)) continue;
+      for (const k of kanjiList) {
+        if (!map[k]) map[k] = elem;
+      }
+    }
+    kk._radicalMap = map;
+    return map;
+  } catch(e) { console.error('[kanken] radical map', e); return null; }
+}
+
 /* ── Helpers ───────────────────────────────────────── */
 function kkShuffle(arr) {
   const a=[...arr];
@@ -137,8 +168,16 @@ async function kkBuildQueue(level, section, count=20) {
     return kkShuffle(yojiPool).slice(0,count).map(item=>({type:'yoji',...item}));
   }
 
-  // For bushu/okurigana: actual pre-fetch so we only queue kanji with valid data.
-  if (section==='bushu' || section==='okurigana') {
+  // For bushu: use element2kanji radical map (no API pre-fetch needed)
+  if (section==='bushu') {
+    const radMap=await kkLoadRadicalMap();
+    if (!radMap) return null;
+    const valid=pool.filter(k=>radMap[k]);
+    return kkShuffle(valid).slice(0,count).map(k=>({type:'bushu',kanji:k,radical:radMap[k]}));
+  }
+
+  // For okurigana: actual pre-fetch so we only queue kanji with valid data.
+  if (section==='okurigana') {
     return await kkBuildFilteredQueue(pool, section, count);
   }
 
@@ -149,8 +188,8 @@ async function kkBuildQueue(level, section, count=20) {
 // Pre-fetch candidates and keep only those with the required data field.
 // Shows a progress counter while loading so the user knows it's working.
 async function kkBuildFilteredQueue(pool, section, count=15) {
-  const TARGET = 15;
-  const candidates = kkShuffle(pool).slice(0, 80); // fetch up to 80 to find 15 valid
+  const TARGET = count;
+  const candidates = kkShuffle(pool).slice(0, 80);
 
   const quizEl = document.getElementById('kk-quiz');
   const showProgress = (n) => {
@@ -163,10 +202,7 @@ async function kkBuildFilteredQueue(pool, section, count=15) {
     if (result.length >= TARGET) break;
     const data = await kkFetchKanji(k);
     if (!data) continue;
-    if (section === 'bushu' && data.radical) {
-      result.push({ type: 'bushu', kanji: k });
-      showProgress(result.length);
-    } else if (section === 'okurigana' && (data.kun_readings||[]).some(r => r.includes('.'))) {
+    if ((data.kun_readings||[]).some(r => r.includes('.'))) {
       result.push({ type: 'okurigana', kanji: k });
       showProgress(result.length);
     }
@@ -336,120 +372,46 @@ function kkSubmitYomi() {
   } else {
     const onH=d.on_readings?.length?`<div class="kk-reading-row"><span class="kk-read-label">音</span>${d.on_readings.map(r=>`<span class="kk-read-chip">${r}</span>`).join('')}</div>`:'';
     const kunH=d.kun_readings?.length?`<div class="kk-reading-row"><span class="kk-read-label">訓</span>${d.kun_readings.map(r=>`<span class="kk-read-chip">${r}</span>`).join('')}</div>`:'';
-    if (fb) fb.innerHTML=`<span class="kk-fb-wrong">✗ 不正解</span><div class="kk-readings-group" style="margin-top:8px">${onH}${kunH}</div>`;
+    if (fb) fb.innerHTML=`<span class="kk-fb-wrong">✗ <span class="kk-wrong-text">${kkEsc(raw)}</span></span>
+      <div class="kk-seikai"><span class="kk-seikai-label">正解：</span></div>
+      <div class="kk-readings-group kk-seikai-text" style="margin-top:4px">${onH}${kunH}</div>`;
   }
   kkMark(isRight);
 }
 
 /* ── 書き ───────────────────────────────────────────── */
-// FIX 1: more breathing room — gap is handled via CSS, but answerEl structure kept clean
 function kkRenderKaki(item, data, kanjiEl, answerEl) {
   const reading=[...(data.on_readings||[]).map(r=>r),...(data.kun_readings||[]).map(r=>r.replace(/\..*$/,''))].slice(0,3).join('・')||'?';
   const meaning=data.meanings?.slice(0,2).join(' / ')||'';
   if (kanjiEl) { kanjiEl.style.fontFamily="'Kosugi Maru',sans-serif"; kanjiEl.style.fontSize='2.2rem'; kanjiEl.textContent=reading; }
+  item._target=item.kanji;
   answerEl.innerHTML=`
     ${meaning?`<div class="kk-q-sub kk-kaki-meaning">${meaning}</div>`:''}
-    <div class="kk-kaki-canvas-wrap">
-      <canvas id="kk-canvas" width="220" height="220" class="kk-canvas"></canvas>
+    <div class="kk-type-row">
+      <input class="kk-type-input" id="kk-type-input" type="text"
+        placeholder="漢字を入力…" autocomplete="off"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();kkKakiSubmit()}" />
+      <button class="btn kk-submit-btn" onclick="kkKakiSubmit()" type="button">答える</button>
     </div>
-    <div class="kk-kaki-controls">
-      <button class="btn btn-sm btn-outline" onclick="kkKakiClear()" type="button">クリア</button>
-      <button class="btn btn-sm kk-submit-btn" id="kk-kaki-submit" onclick="kkKakiSubmit()" type="button">認識する</button>
-    </div>
-    <div class="kk-feedback" id="kk-feedback"></div>
-    <div class="kk-attempt-dots" id="kk-attempt-dots">
-      <span class="kk-dot active" id="kk-dot-0">●</span>
-      <span class="kk-dot" id="kk-dot-1">●</span>
-      <span class="kk-dot" id="kk-dot-2">●</span>
-    </div>`;
-  kkKakiInitCanvas();
+    <div class="kk-feedback" id="kk-feedback"></div>`;
+  requestAnimationFrame(()=>document.getElementById('kk-type-input')?.focus());
 }
-const _kkC={drawing:false,strokes:[],currentStroke:null,lastX:0,lastY:0};
-function kkKakiInitCanvas() {
-  const canvas=document.getElementById('kk-canvas'); if (!canvas) return;
-  const ctx=canvas.getContext('2d');
-  _kkC.drawing=false; _kkC.strokes=[]; _kkC.currentStroke=null;
-  function grid() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.save(); ctx.strokeStyle='rgba(100,100,100,0.12)'; ctx.lineWidth=1; ctx.setLineDash([5,5]);
-    ctx.beginPath(); ctx.moveTo(canvas.width/2,0); ctx.lineTo(canvas.width/2,canvas.height);
-    ctx.moveTo(0,canvas.height/2); ctx.lineTo(canvas.width,canvas.height/2); ctx.stroke();
-    ctx.setLineDash([]); ctx.restore();
-  }
-  grid(); canvas._grid=grid;
-  function pos(e) {
-    const rect=canvas.getBoundingClientRect(), src=e.touches?e.touches[0]:e;
-    return [(src.clientX-rect.left)*(canvas.width/rect.width),(src.clientY-rect.top)*(canvas.height/rect.height)];
-  }
-  function start(e) {
-    e.preventDefault(); _kkC.drawing=true;
-    const [x,y]=pos(e); _kkC.lastX=x; _kkC.lastY=y;
-    _kkC.currentStroke=[{x,y,t:Date.now()}]; _kkC.strokes.push(_kkC.currentStroke);
-  }
-  function move(e) {
-    if (!_kkC.drawing) return; e.preventDefault();
-    const [x,y]=pos(e);
-    ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--ink')||'#333';
-    ctx.lineWidth=8; ctx.lineCap='round'; ctx.lineJoin='round';
-    ctx.beginPath(); ctx.moveTo(_kkC.lastX,_kkC.lastY); ctx.lineTo(x,y); ctx.stroke();
-    _kkC.lastX=x; _kkC.lastY=y;
-    if (_kkC.currentStroke) _kkC.currentStroke.push({x,y,t:Date.now()});
-  }
-  function end() { _kkC.drawing=false; ctx.beginPath(); }
-  canvas.addEventListener('mousedown',start); canvas.addEventListener('mousemove',move);
-  canvas.addEventListener('mouseup',end); canvas.addEventListener('mouseleave',end);
-  canvas.addEventListener('touchstart',start,{passive:false}); canvas.addEventListener('touchmove',move,{passive:false});
-  canvas.addEventListener('touchend',end);
-}
-function kkKakiClear() {
-  const canvas=document.getElementById('kk-canvas'); if (!canvas) return;
-  _kkC.strokes=[]; _kkC.currentStroke=null;
-  const ctx=canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height);
-  if (canvas._grid) canvas._grid();
-}
+function kkKakiClear() {}
 async function kkKakiSubmit() {
   if (kk.answered) return;
-  const canvas=document.getElementById('kk-canvas'), fb=document.getElementById('kk-feedback');
-  const btn=document.getElementById('kk-kaki-submit');
-  const usable=_kkC.strokes.filter(s=>s&&s.length>=2);
-  if (!usable.length) { if (fb) fb.innerHTML='<span class="kk-fb-hint">まず漢字を書いてください。</span>'; return; }
-  if (btn) { btn.disabled=true; btn.textContent='認識中…'; }
-  const endpoint=(window.TSUNDOKU_CONFIG&&window.TSUNDOKU_CONFIG.handwriteEndpoint)||'https://minireader.zoe-caudron.workers.dev/handwrite';
-  try {
-    const ink=usable.map(s=>([s.map(p=>Math.round(p.x)),s.map(p=>Math.round(p.y)),s.map(p=>Math.round(p.t||0))]));
-    const payload={device:navigator.userAgent,options:'enable_pre_space',requests:[{writing_guide:{writing_area_width:canvas.width,writing_area_height:canvas.height},ink,language:'ja'}]};
-    const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    const data=await r.json();
-    const cands=[];
-    function walk(node) {
-      if (!node) return;
-      if (Array.isArray(node)) { if (node.length&&node.every(x=>typeof x==='string')) { node.forEach(s=>{if(s.length===1&&/[\u3040-\u9fff]/.test(s))cands.push(s);}); } else node.forEach(walk); return; }
-      if (typeof node==='object') Object.values(node).forEach(walk);
-    }
-    walk(data);
-    const target=kk.current?.kanji, hit=cands.includes(target);
-    kk.kakiAttempts++;
-    if (hit) {
-      kk.answered=true;
-      if (fb) fb.innerHTML=`<span class="kk-fb-correct">○ 正解！</span>`;
-      kkMark(true); return;
-    }
-    const dot=document.getElementById(`kk-dot-${Math.min(kk.kakiAttempts-1,2)}`);
-    if (dot) dot.classList.add('used');
-    if (kk.kakiAttempts>=3) {
-      kk.answered=true;
-      if (fb) fb.innerHTML=`<span class="kk-fb-wrong">✗ 3回不正解</span><div style="margin-top:10px"><span style="font-size:0.85rem;opacity:0.7">答え：</span><span class="kk-kaki-answer">${target}</span></div>`;
-      kkMark(false);
-    } else {
-      if (fb) fb.innerHTML=`<span class="kk-fb-wrong">✗ 認識: ${cands.slice(0,5).join(' ')||'なし'} — あと${3-kk.kakiAttempts}回</span>`;
-      kkKakiClear();
-      if (btn) { btn.disabled=false; btn.textContent='認識する'; }
-    }
-  } catch(e) {
-    console.error('[kkKaki]',e);
-    if (fb) fb.innerHTML='<span class="kk-fb-hint">認識エラー。もう一度描いてください。</span>';
-    if (btn) { btn.disabled=false; btn.textContent='認識する'; }
+  const input=document.getElementById('kk-type-input'); if (!input) return;
+  const raw=input.value.trim(); if (!raw) { input.focus(); return; }
+  const target=kk.current?.kanji;
+  const isRight=raw===target;
+  kk.answered=true; input.disabled=true;
+  const fb=document.getElementById('kk-feedback');
+  if (isRight) {
+    if (fb) fb.innerHTML=`<span class="kk-fb-correct">○ 正解！</span>`;
+  } else {
+    if (fb) fb.innerHTML=`<span class="kk-fb-wrong">✗ <span class="kk-wrong-text">${kkEsc(raw)}</span></span>
+      <div class="kk-seikai"><span class="kk-seikai-label">正解：</span><span class="kk-kaki-answer kk-seikai-text">${target}</span></div>`;
   }
+  kkMark(isRight);
 }
 
 /* ── 画数: KanjiVG stroke highlight ─────────────────── */
@@ -532,17 +494,17 @@ function kkStrokeNumberChoices(correct, total) {
 /* ── 部首: 4-choice ──────────────────────────────────── */
 // FIX 4: skip if no radical data (handled at queue-build; still guard here)
 function kkRenderBushu(item, data, answerEl) {
-  const radical=data.radical;
+  const radical=item.radical;
   if (!radical) {
-    // Skip silently — advance to next
     setTimeout(()=>{ kk.pending.shift(); kkRenderQuestion(); }, 0);
     return;
   }
   const COMMON=['一','人','口','手','木','水','火','山','日','月','心','女','子','土','金',
     '糸','竹','艹','言','足','門','雨','田','石','王','虫','米','目','耳','刀','力','弓','示',
-    '彳','扌','氵','灬','犭','礻','衤','讠','钅','阝','亻','冫','冖','凵','匸','卩','厂','厶',
-    '又','口','囗','土','壬','夂','夊','夕','大','女','子','宀','寸','小','尢'];
-  const distractors=kkShuffle(COMMON.filter(r=>r!==radical)).slice(0,3);
+    '彳','扌','氵','灬','犭','礻','衤','阝','亻','冫','冖','凵','匸','卩','厂','厶',
+    '又','囗','壬','夂','夊','夕','大','宀','寸','小','尢'];
+  const allChoices=[radical,...COMMON.filter(r=>r!==radical)];
+  const distractors=kkShuffle(allChoices.slice(1)).slice(0,3);
   const choices=kkShuffle([radical,...distractors]);
   answerEl.innerHTML=`<div class="kk-choices">${choices.map(r=>`<button class="btn kk-choice-btn kk-choice-kanji" onclick="kkCheckChoiceStr(this,'${kkEsc(r)}','${kkEsc(radical)}')" type="button">${r}</button>`).join('')}</div>`;
 }
@@ -581,7 +543,9 @@ function kkSubmitOkuri() {
   if (isRight) {
     if (fb) fb.innerHTML=`<span class="kk-fb-correct">○ 正解！</span><div style="margin-top:6px"><span class="kk-okurigana-answer">${kk.current.kanji}<span class="kk-okuri-part">${kk.current._okuri}</span></span></div>`;
   } else {
-    if (fb) fb.innerHTML=`<span class="kk-fb-wrong">✗ 不正解</span><div style="margin-top:8px"><span class="kk-okurigana-answer">${kk.current.kanji}<span class="kk-okuri-part">${kk.current._okuri}</span></span><span style="margin-left:10px;opacity:0.7">${kk.current._base}${kk.current._okuri}</span></div>`;
+    if (fb) fb.innerHTML=`<span class="kk-fb-wrong">✗ <span class="kk-wrong-text">${kkEsc(raw)}</span></span>
+      <div class="kk-seikai"><span class="kk-seikai-label">正解：</span><span class="kk-okurigana-answer kk-seikai-text">${kk.current.kanji}<span class="kk-okuri-part">${kk.current._okuri}</span></span>
+      <span style="margin-left:10px;opacity:0.7">${kk.current._base}${kk.current._okuri}</span></div>`;
   }
   kkMark(isRight);
 }
@@ -672,7 +636,9 @@ function kkSubmitTaigi() {
     if (fb) fb.innerHTML=`<span class="kk-fb-correct">○ 正解！</span>`;
   } else {
     const chips=kk.current._antonyms.slice(0,4).map(a=>`<span class="kk-read-chip">${a}</span>`).join('');
-    if (fb) fb.innerHTML=`<span class="kk-fb-wrong">✗ 不正解</span><div class="kk-readings-group" style="margin-top:8px">${chips}</div>`;
+    if (fb) fb.innerHTML=`<span class="kk-fb-wrong">✗ <span class="kk-wrong-text">${kkEsc(raw)}</span></span>
+      <div class="kk-seikai"><span class="kk-seikai-label">正解：</span></div>
+      <div class="kk-readings-group kk-seikai-text" style="margin-top:4px">${chips}</div>`;
   }
   kkMark(isRight);
 }
@@ -734,7 +700,7 @@ function kkMark(correct, alreadyHandled=false) {
   const item = kk.pending.shift();
   if (correct) {
     kk.score.correct++;
-    // Correct: item cleared, don't requeue
+    setTimeout(()=>{ kkRenderQuestion(); }, alreadyHandled?1000:700);
   } else {
     kk.score.wrong++;
     if (item) kk.wrongItems.push(item);
@@ -743,8 +709,20 @@ function kkMark(correct, alreadyHandled=false) {
       const insertAt = Math.min(3 + Math.floor(Math.random()*3), kk.pending.length);
       kk.pending.splice(insertAt, 0, item);
     }
+    // Don't auto-advance — show "次へ" button so user can study the answer
+    kkShowNextButton();
   }
-  setTimeout(()=>{ kkRenderQuestion(); }, !correct?2800:alreadyHandled?1000:700);
+}
+
+function kkShowNextButton() {
+  const card = document.getElementById('kk-question-card');
+  if (!card || card.querySelector('.kk-next-btn')) return;
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-outline kk-next-btn';
+  btn.type = 'button';
+  btn.innerHTML = '次へ →';
+  btn.onclick = () => kkRenderQuestion();
+  card.appendChild(btn);
 }
 // kkNext used by manual "next" buttons (yoji wrong answer, etc.)
 function kkNext() { kkRenderQuestion(); }
