@@ -1,5 +1,5 @@
 /* =============================================================
-   Cloudflare Worker — Dictionary + Handwriting + NHK proxy
+   Cloudflare Worker — Dictionary + Handwriting + NHK + Kaiwa proxy
    ============================================================= */
 
 export default {
@@ -13,6 +13,11 @@ export default {
 
     if (url.pathname === '/handwrite') {
       return handleHandwrite(request, origin);
+    }
+
+    // ── Kaiwa — conversation practice via Gemini API ────────────────────────
+    if (url.pathname === '/kaiwa') {
+      return handleKaiwa(request, env, origin);
     }
 
     // ── NHK Easy News: article list ───────────────────────────────────────────
@@ -35,13 +40,217 @@ export default {
   }
 };
 
+// ── Kaiwa — Conversation practice via Gemini Flash ──────────────────────────
+
+const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+const KAIWA_SYSTEM_PROMPTS = {
+  auto: `You are a friendly Japanese conversation partner in a language learning app called 積読フレンド.
+The user's level is unknown — adapt to whatever they write. If they write simple sentences, keep your Japanese simple. If they write complex Japanese, match that level.
+
+RESPONSE FORMAT — you MUST follow this exactly:
+1. First, reply naturally in Japanese as a conversation partner. Ask a follow-up question to keep the chat going. Keep your reply concise (2-4 sentences).
+2. Then write this exact separator on its own line: 【添削】
+3. After the separator, provide corrections and notes IN ENGLISH:
+   - If there were mistakes, show: ~~wrong~~ → **correct** and explain briefly
+   - Note any unnatural phrasing and suggest more natural alternatives
+   - If their Japanese was perfect, say so and optionally teach a related word or grammar point
+   - Mention what JLPT level you estimate they're at
+
+Always be encouraging. Keep corrections concise and focused on the most important points.`,
+
+  beginner: `You are a friendly Japanese conversation partner for a BEGINNER learner (around JLPT N5 level) in a language learning app.
+
+RULES FOR YOUR JAPANESE:
+- Use only basic vocabulary and simple grammar (です/ます form)
+- Keep sentences short. Use common words only.
+- Avoid keigo, complex conjugations, or compound sentences
+- If the user seems lost, gently simplify further
+
+RESPONSE FORMAT — you MUST follow this exactly:
+1. Reply in simple Japanese (1-3 short sentences). Ask a simple follow-up question.
+2. Then write this exact separator on its own line: 【添削】
+3. After the separator, provide corrections IN ENGLISH:
+   - Show mistakes: ~~wrong~~ → **correct** with simple explanations
+   - Focus on particles, basic verb forms, and word order
+   - Suggest helpful vocabulary related to the conversation
+   - Always be very encouraging — learning Japanese is hard!`,
+
+  intermediate: `You are a friendly Japanese conversation partner for an INTERMEDIATE learner (around JLPT N4-N3) in a language learning app.
+
+RULES FOR YOUR JAPANESE:
+- Use natural, everyday Japanese with です/ます or casual form depending on the user's style
+- You can use て-form connections, たり〜たり, ～たことがある, conditionals (たら/ば), etc.
+- Keep vocabulary at a daily-life level. Introduce occasional new words with context.
+- Use some compound sentences but don't go overboard
+
+RESPONSE FORMAT — you MUST follow this exactly:
+1. Reply in Japanese (2-4 sentences). Ask a follow-up question to continue the conversation.
+2. Then write this exact separator on its own line: 【添削】
+3. After the separator, provide corrections IN ENGLISH:
+   - Show mistakes: ~~wrong~~ → **correct** with grammar explanations
+   - Point out unnatural phrasing and suggest natural alternatives
+   - Teach useful expressions or collocations related to the topic
+   - Be encouraging while being thorough with corrections`,
+
+  advanced: `You are a Japanese conversation partner for an ADVANCED learner (JLPT N2-N1 level) in a language learning app.
+
+RULES FOR YOUR JAPANESE:
+- Write natural, adult Japanese. Use keigo where appropriate.
+- Feel free to use complex grammar, idiomatic expressions, 四字熟語, formal/informal register shifts
+- You can discuss abstract topics, current events, opinions
+- Write as you would to a Japanese adult, but remain clear
+
+RESPONSE FORMAT — you MUST follow this exactly:
+1. Reply in natural Japanese (2-5 sentences). Engage thoughtfully with what they said. Ask a follow-up question.
+2. Then write this exact separator on its own line: 【添削】
+3. After the separator, provide notes IN ENGLISH:
+   - Correct any mistakes: ~~wrong~~ → **correct**
+   - Point out subtle nuance issues, register mismatches, or unnatural word choices
+   - Suggest more sophisticated alternatives where relevant
+   - Teach advanced expressions, collocations, or grammar patterns`,
+
+  n5: `You are a friendly Japanese conversation partner for a JLPT N5 level learner. Use only N5 vocabulary and grammar. Keep sentences very short and simple. Use です/ます form only. Avoid kanji beyond basic N5 kanji — prefer hiragana for other words.
+
+RESPONSE FORMAT — you MUST follow this exactly:
+1. Reply in very simple Japanese (1-2 short sentences). Ask a simple question.
+2. Then write this exact separator on its own line: 【添削】
+3. After the separator, provide corrections IN ENGLISH with ~~wrong~~ → **correct** format. Be very encouraging.`,
+
+  n4: `You are a Japanese conversation partner for a JLPT N4 level learner. Use N5-N4 vocabulary and grammar. You can use て-form, ない-form, past tense, たい, simple conditionals. Keep it conversational but not too complex.
+
+RESPONSE FORMAT — you MUST follow this exactly:
+1. Reply in Japanese (2-3 sentences). Ask a follow-up question.
+2. Then write this exact separator on its own line: 【添削】
+3. After the separator, provide corrections IN ENGLISH with ~~wrong~~ → **correct** format.`,
+
+  n3: `You are a Japanese conversation partner for a JLPT N3 level learner. Use N5-N3 vocabulary and grammar. You can use compound sentences, ようにする, ことにする, passive, causative basics, various conditionals. Natural everyday Japanese.
+
+RESPONSE FORMAT — you MUST follow this exactly:
+1. Reply in Japanese (2-4 sentences). Ask a follow-up question.
+2. Then write this exact separator on its own line: 【添削】
+3. After the separator, provide corrections IN ENGLISH with ~~wrong~~ → **correct** format. Point out grammar and naturalness issues.`,
+
+  n2: `You are a Japanese conversation partner for a JLPT N2 level learner. Use a wide vocabulary. Complex grammar is fine: ～にもかかわらず, ～に対して, ～わけではない, etc. Discuss topics with nuance. Mix formal and casual as fits context.
+
+RESPONSE FORMAT — you MUST follow this exactly:
+1. Reply in natural Japanese (2-5 sentences). Engage with their ideas. Ask a follow-up question.
+2. Then write this exact separator on its own line: 【添削】
+3. After the separator, provide detailed corrections IN ENGLISH. Focus on nuance, register, and advanced grammar.`,
+
+  n1: `You are a Japanese conversation partner for a JLPT N1 level learner. Write fully natural Japanese — literary expressions, keigo, 四字熟語, idiomatic phrases are all fair game. Engage at the level of an educated Japanese adult.
+
+RESPONSE FORMAT — you MUST follow this exactly:
+1. Reply in natural Japanese (2-5 sentences). Engage thoughtfully.
+2. Then write this exact separator on its own line: 【添削】
+3. After the separator, provide notes IN ENGLISH on any mistakes, nuance issues, or register choices. Suggest more sophisticated alternatives. Teach advanced expressions.`,
+};
+
+const KAIWA_TOPIC_HINTS = {
+  jikoshoukai: 'The conversation topic is self-introduction (自己紹介). Help the user practice introducing themselves.',
+  kaimono:     'The conversation topic is shopping (買い物). Use vocabulary related to shopping, prices, sizes, preferences.',
+  restaurant:  'The conversation topic is eating at a restaurant (レストラン). Practice ordering, asking about the menu, expressing preferences.',
+  travel:      'The conversation topic is travel (旅行). Discuss trips, destinations, transportation, experiences.',
+  hobby:       'The conversation topic is hobbies (趣味). Ask about and discuss hobbies, interests, free time.',
+  work:        'The conversation topic is work or school (仕事・学校). Discuss daily routines, responsibilities, goals.',
+  opinion:     'The conversation topic is sharing opinions (意見). Practice expressing agreement, disagreement, reasoning.',
+  directions:  'The conversation topic is asking for directions (道案内). Practice location words, giving/receiving directions.',
+};
+
+async function handleKaiwa(request, env, origin) {
+  if (request.method !== 'POST') {
+    return json({ error: 'METHOD_NOT_ALLOWED' }, 405, origin);
+  }
+
+  const apiKey = env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return json({ error: 'KAIWA_NOT_CONFIGURED', detail: 'Missing GEMINI_API_KEY secret' }, 500, origin);
+  }
+
+  try {
+    const body = await request.json();
+    const { messages, level, topic } = body;
+
+    if (!messages || !Array.isArray(messages) || !messages.length) {
+      return json({ error: 'NO_MESSAGES' }, 400, origin);
+    }
+
+    // Build system instruction
+    const levelKey = (level || 'auto').toLowerCase();
+    let systemInstruction = KAIWA_SYSTEM_PROMPTS[levelKey] || KAIWA_SYSTEM_PROMPTS.auto;
+    if (topic && KAIWA_TOPIC_HINTS[topic]) {
+      systemInstruction += '\n\n' + KAIWA_TOPIC_HINTS[topic];
+    }
+
+    // Convert messages to Gemini format
+    // Gemini uses role: "user" / "model" (not "assistant")
+    // Each message has parts: [{ text: "..." }]
+    const contents = messages.slice(-20).map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: String(m.content || '').slice(0, 2000) }],
+    }));
+
+    // Gemini requires alternating user/model turns — merge consecutive same-role msgs
+    const merged = [];
+    for (const msg of contents) {
+      if (merged.length && merged[merged.length - 1].role === msg.role) {
+        merged[merged.length - 1].parts[0].text += '\n' + msg.parts[0].text;
+      } else {
+        merged.push(msg);
+      }
+    }
+
+    // Gemini requires the first message to be from "user"
+    if (merged.length && merged[0].role === 'model') {
+      merged.shift();
+    }
+
+    const geminiBody = {
+      system_instruction: {
+        parts: [{ text: systemInstruction }],
+      },
+      contents: merged,
+      generationConfig: {
+        maxOutputTokens: 1024,
+        temperature: 0.8,
+      },
+    };
+
+    const r = await fetch(GEMINI_URL + '?key=' + apiKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(geminiBody),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!r.ok) {
+      const errText = await r.text().catch(() => '');
+      console.error('Gemini API error:', r.status, errText);
+      return json({ error: 'API_ERROR', status: r.status, detail: errText }, 502, origin);
+    }
+
+    const data = await r.json();
+
+    // Extract text from Gemini response
+    // Shape: { candidates: [{ content: { parts: [{ text: "..." }] } }] }
+    const reply = data.candidates?.[0]?.content?.parts
+      ?.filter(p => p.text)
+      ?.map(p => p.text)
+      ?.join('\n')
+      || 'すみません、エラーが発生しました。もう一度試してください。';
+
+    return okJson({ reply }, origin);
+  } catch (e) {
+    console.error('Kaiwa handler error:', e);
+    return json({ error: 'KAIWA_FAILED', detail: e.message }, 500, origin);
+  }
+}
+
 // ── NHK Easy News ─────────────────────────────────────────────────────────────
-// NHK's JSON API endpoints require authentication from Cloudflare Workers.
-// Instead we fetch the HTML homepage and parse article links from the page source.
 
 async function handleNhkList(origin) {
   try {
-    // Fetch the NHK Easy News homepage HTML
     const r = await fetch('https://www3.nhk.or.jp/news/easy/', {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -53,14 +262,9 @@ async function handleNhkList(origin) {
     if (!r.ok) throw new Error('NHK Easy homepage HTTP ' + r.status);
     const html = await r.text();
 
-    // NHK Easy article links are in <a href="/news/easy/NEWSID/NEWSID.html"> format
-    // Article titles appear in the adjacent text or in data attributes
     const articles = [];
     const seenIds = new Set();
 
-    // Pattern: href="/news/easy/{id}/{id}.html" with nearby title text
-    // NHK Easy uses list items like:
-    // <a class="..." href="/news/easy/k10014.../k10014....html"><p class="...">Title text</p></a>
     const linkRe = /href="(\/news\/easy\/(k\d+)\/\2\.html)"[^>]*>([\s\S]*?)(?=<a |<\/li>|<\/div>)/g;
     let m;
     while ((m = linkRe.exec(html)) !== null && articles.length < 20) {
@@ -70,7 +274,6 @@ async function handleNhkList(origin) {
       if (seenIds.has(id)) continue;
       seenIds.add(id);
 
-      // Extract readable title — strip tags, decode entities
       const title = inner
         .replace(/<ruby[^>]*>(.*?)<\/ruby>/gs, (_, rb) => rb.replace(/<rt[^>]*>.*?<\/rt>/gs,'').replace(/<[^>]+>/g,''))
         .replace(/<[^>]+>/g, '')
@@ -87,7 +290,6 @@ async function handleNhkList(origin) {
       });
     }
 
-    // Fallback: simpler pattern if above yields nothing
     if (!articles.length) {
       const simpleRe = /href="(\/news\/easy\/(k\d+)\/\2\.html)"/g;
       let sm;
@@ -127,7 +329,6 @@ async function handleNhkArticle(articleUrl, origin) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const html = await r.text();
 
-    // Try multiple selectors NHK has used over time
     let body = '';
     const patterns = [
       /id="js-article-body"[^>]*>([\s\S]*?)<\/div>/,
@@ -144,7 +345,6 @@ async function handleNhkArticle(articleUrl, origin) {
       body = ps.filter(p => /[\u3040-\u9fff]/.test(p)).slice(0, 30).join('\n');
     }
 
-    // Clean up: strip NHK's <rb> wrappers (keep <ruby>/<rt> for furigana)
     body = body
       .replace(/<rb[^>]*>/g, '').replace(/<\/rb>/g, '')
       .replace(/<span[^>]*class="colour[^"]*"[^>]*>/g, '').replace(/<\/span>/g, '')

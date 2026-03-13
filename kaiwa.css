@@ -1,0 +1,297 @@
+/* =========================
+   KAIWA — 会話 Chat Styles
+========================= */
+
+/* ── Setup card ──────────────────────────────────── */
+.kw-setup-intro {
+  font-size: 0.88rem;
+  line-height: 1.7;
+  opacity: 0.7;
+  margin-bottom: 20px;
+}
+
+.kw-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  margin-bottom: 10px;
+}
+
+/* ── Level grid ──────────────────────────────────── */
+.kw-level-section { margin-bottom: 22px; }
+
+.kw-level-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kw-level-group-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.4;
+  margin-top: 10px;
+  margin-bottom: 2px;
+}
+
+.kw-level-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: var(--stroke) solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--ink);
+  text-align: left;
+  transition: border-color 120ms, background 120ms;
+}
+.kw-level-btn:hover {
+  border-color: var(--accent-stroke);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.kw-level-btn.active {
+  border-color: var(--accent-stroke);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.kw-level-name {
+  font-family: 'Kosugi Maru', sans-serif;
+  font-size: 0.92rem;
+}
+.kw-level-desc {
+  font-size: 0.76rem;
+  opacity: 0.55;
+}
+
+/* ── Topic pills ─────────────────────────────────── */
+.kw-topic-section { margin-bottom: 22px; }
+
+.kw-topic-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.kw-topic-btn {
+  padding: 6px 14px;
+  border: var(--stroke) solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink);
+  font-family: 'Kosugi Maru', sans-serif;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 120ms, background 120ms;
+}
+.kw-topic-btn:hover {
+  border-color: var(--accent-stroke);
+}
+.kw-topic-btn.active {
+  border-color: var(--accent-stroke);
+  color: var(--accent-stroke);
+  background: color-mix(in srgb, var(--accent-stroke) 8%, transparent);
+}
+
+/* ── Start button ────────────────────────────────── */
+.kw-start-row {
+  margin-top: 8px;
+  text-align: center;
+}
+.kw-start-btn {
+  font-size: 0.95rem;
+  padding: 10px 32px;
+}
+
+/* ── Chat layout ─────────────────────────────────── */
+.kw-chat-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 160px);
+  min-height: 400px;
+}
+
+.kw-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0 14px;
+  border-bottom: var(--stroke) solid var(--border);
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+.kw-chat-title {
+  font-family: 'Kosugi Maru', sans-serif;
+  font-size: 0.88rem;
+  opacity: 0.7;
+}
+
+/* ── Messages area ───────────────────────────────── */
+.kw-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kw-system-msg {
+  text-align: center;
+  font-size: 0.84rem;
+  line-height: 1.7;
+  opacity: 0.55;
+  padding: 16px 12px;
+}
+
+/* ── Bubbles ─────────────────────────────────────── */
+.kw-bubble {
+  display: flex;
+  max-width: 85%;
+}
+
+.kw-bubble-user {
+  align-self: flex-end;
+}
+.kw-bubble-user .kw-bubble-inner {
+  border: var(--stroke) solid var(--accent-stroke);
+  border-radius: 16px 16px 4px 16px;
+  padding: 10px 14px;
+  font-family: 'Kosugi Maru', sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.8;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent-stroke) 8%, transparent);
+}
+
+.kw-bubble-assistant {
+  align-self: flex-start;
+  flex-direction: column;
+  gap: 8px;
+}
+.kw-bubble-assistant .kw-bubble-inner {
+  border: var(--stroke) solid var(--border);
+  border-radius: 16px 16px 16px 4px;
+  padding: 10px 14px;
+  font-family: 'Kosugi Maru', sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.8;
+  color: var(--ink);
+}
+.kw-bubble-assistant .kw-conversation {
+  /* main Japanese reply */
+}
+
+/* ── Correction block ────────────────────────────── */
+.kw-correction {
+  border: var(--stroke) solid var(--accent2-stroke);
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--accent2-stroke) 6%, transparent);
+}
+.kw-correction-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent2-stroke);
+  margin-bottom: 6px;
+}
+.kw-correction-body {
+  font-size: 0.84rem;
+  line-height: 1.8;
+  font-family: 'Funnel Display', sans-serif;
+  font-weight: 300;
+}
+.kw-correction-body strong {
+  font-weight: 500;
+}
+
+/* Strikethrough for wrong → right corrections */
+.kw-strike {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+/* ── Typing indicator ────────────────────────────── */
+.kw-typing .kw-bubble-inner {
+  display: flex;
+  gap: 5px;
+  padding: 12px 18px;
+}
+.kw-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: kwBounce 1.2s infinite;
+}
+.kw-dot:nth-child(2) { animation-delay: 0.15s; }
+.kw-dot:nth-child(3) { animation-delay: 0.30s; }
+@keyframes kwBounce {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30%           { opacity: 1;   transform: translateY(-4px); }
+}
+
+/* ── Input bar ───────────────────────────────────── */
+.kw-input-bar {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  padding: 12px 0 4px;
+  border-top: var(--stroke) solid var(--border);
+  flex-shrink: 0;
+}
+.kw-input {
+  flex: 1;
+  resize: none;
+  border: var(--stroke) solid var(--border-strong);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-family: 'Kosugi Maru', sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  background: transparent;
+  color: var(--ink);
+  min-height: 44px;
+  max-height: 120px;
+}
+.kw-input:focus {
+  outline: none;
+  border-color: var(--accent-stroke);
+}
+.kw-input::placeholder {
+  font-family: 'Kosugi Maru', sans-serif;
+  opacity: 0.4;
+}
+
+.kw-send-btn {
+  flex-shrink: 0;
+  padding: 10px 18px;
+  font-size: 0.88rem;
+}
+.kw-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Mobile ──────────────────────────────────────── */
+@media (max-width: 600px) {
+  .kw-chat-wrap {
+    height: calc(100vh - 140px);
+    height: calc(100dvh - 140px);
+  }
+  .kw-bubble { max-width: 92%; }
+  .kw-level-btn { padding: 8px 12px; }
+  .kw-topic-btn { font-size: 0.78rem; padding: 5px 10px; }
+}

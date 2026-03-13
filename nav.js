@@ -10,7 +10,7 @@ function showPanel(id, btn) {
   if (btn) {
     btn.classList.add('active');
   } else {
-    const map = { lookup: 0, bookshelf: 1, writing: 2, radicals: 3, flashcards: 4, reader: 5, kanken: 6 };
+    const map = { lookup: 0, bookshelf: 1, writing: 2, radicals: 3, flashcards: 4, reader: 5, kanken: 6, kaiwa: 7 };
     const i = map[id];
     const btns = document.querySelectorAll('nav button');
     if (Number.isInteger(i) && btns[i]) btns[i].classList.add('active');
@@ -23,6 +23,7 @@ function showPanel(id, btn) {
   } } catch(e) { console.error(e); }
   try { if (id === 'reader' && typeof initReader === 'function') initReader(); } catch(e) { console.error(e); }
   try { if (id === 'kanken' && typeof initKanken === 'function') initKanken(); } catch(e) { console.error(e); }
+  try { if (id === 'kaiwa' && typeof initKaiwa === 'function') initKaiwa(); } catch(e) { console.error(e); }
   try {
     if (id === 'flashcards') {
       const setup = document.getElementById('fc-setup');
