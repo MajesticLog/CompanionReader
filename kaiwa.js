@@ -1,6 +1,6 @@
 /* =========================
    KAIWA — 会話 Practice
-   Chat with Claude in Japanese
+   Chat in Japanese with AI conversation partner
 ========================= */
 
 const KAIWA_API = (window.TSUNDOKU_CONFIG && window.TSUNDOKU_CONFIG.kaiwaApi)
@@ -17,7 +17,7 @@ const kaiwa = {
 
 /* ── Level / topic metadata ──────────────────────── */
 const KW_LEVELS = [
-  { id: 'auto',         label: 'おまかせ — Let Claude adapt', desc: 'Write freely and Claude will match your level' },
+  { id: 'auto',         label: 'おまかせ - Adapted to you', desc: 'Write freely and the AI will match your level' },
   { id: 'beginner',     label: '初級 Beginner',   desc: 'Simple greetings, self-intro, daily life (～N5)' },
   { id: 'intermediate', label: '中級 Intermediate', desc: 'Opinions, experiences, plans (～N4–N3)' },
   { id: 'advanced',     label: '上級 Advanced',    desc: 'Abstract topics, nuance, formal speech (～N2–N1)' },
@@ -62,8 +62,8 @@ function renderKaiwaSetup() {
     <div class="card kw-setup-card" style="max-width:600px;margin:0 auto">
       <h2>会話 — Conversation Practice</h2>
       <p class="kw-setup-intro">
-        Chat with Claude in Japanese. Pick your level, choose an optional topic, and start writing.
-        Claude will reply in Japanese, then gently correct any mistakes.
+        Chat in Japanese. Pick your level, choose an optional topic, and start writing.
+        Your AI partner will reply in Japanese, then gently correct any mistakes.
       </p>
 
       <div class="kw-level-section">
@@ -124,8 +124,8 @@ function kwStartSession() {
       </div>
       <div class="kw-messages" id="kw-messages">
         <div class="kw-system-msg">
-          Say something in Japanese to start! Claude will respond and help you improve.<br>
-          <span style="opacity:0.5;font-size:0.78rem">Tip: you can write in romaji too — Claude understands either way.</span>
+          Say something in Japanese to start! Your partner will respond and help you improve.<br>
+          <span style="opacity:0.5;font-size:0.78rem">Tip: you can write in romaji too — it understands either way.</span>
         </div>
       </div>
       <div class="kw-input-bar" id="kw-input-bar">
@@ -242,9 +242,9 @@ function kwSetSendEnabled(enabled) {
   if (btn) btn.disabled = !enabled;
 }
 
-/* ── Parse Claude's reply into conversation + correction ─── */
+/* ── Parse AI reply into conversation + correction ─── */
 function kwParseReply(raw) {
-  // Claude is instructed to use a separator like ---correction--- or 【添削】
+  // The AI is instructed to use a separator like ---correction--- or 【添削】
   const separators = [
     /\n---\s*correct(?:ion|ions)?\s*---\n/i,
     /\n【添削】\n/,
