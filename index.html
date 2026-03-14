@@ -12,6 +12,15 @@
   <link href="styles.css" rel="stylesheet"/>
    <link href="kaiwa.css" rel="stylesheet"/>
   <link href="kanken.css" rel="stylesheet"/>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-T4VFKGJ6XC"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-T4VFKGJ6XC');
+</script>
 </head>
 <body>
 <header class="topbar">
@@ -304,10 +313,10 @@
     <div class="reader-controls">
       <div class="reader-toolbar">
         <select id="reader-source" onchange="readerLoadSource()">
-          <option value="nhk">📰 NHK Easy News (N4/N3)</option>
-          <option value="tadoku-n2">📖 Tadoku Stories — N2</option>
-          <option value="tadoku-n1">📖 Tadoku Stories — N1</option>
-        </select>
+  <option value="nhk">📰 NHK Easy News (N4/N3)</option>
+  <option value="slowcomm">📰 Slow Communication (N3/N2)</option>
+  <option value="nhk-regular">📰 NHK News (N1+)</option>
+</select>
         <label class="reader-toggle">
           <input type="checkbox" id="furigana-toggle" onchange="readerToggleFurigana(this.checked)" checked>
           Show furigana
