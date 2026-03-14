@@ -88,11 +88,12 @@ async function readerLoadNhk(listEl) {
   const workerBase = (window.TSUNDOKU_CONFIG?.jishoApi || 'https://minireader.zoe-caudron.workers.dev/?keyword=')
     .replace('?keyword=', '');
   try {
-    const r = await fetch(workerBase + '?nhk=1', { signal: AbortSignal.timeout(10000) });
+    const r = await fetch(workerBase + '?nhk=1', { signal: AbortSignal.timeout(12000) });
     if (!r.ok) throw new Error('Worker returned ' + r.status);
     const data = await r.json();
     if (!data.articles?.length) throw new Error('No articles');
     readerNhkArticles = data.articles;
+    readerLastFetch = Date.now();
     listEl.innerHTML = '';
     for (const article of data.articles) {
       const btn = document.createElement('button');
@@ -113,32 +114,42 @@ async function readerLoadNhk(listEl) {
   } catch (e) {
     listEl.innerHTML = `
       <div style="padding:16px">
-        <p class="status-msg" style="margin-bottom:12px">⚠ Couldn't load NHK Easy News (worker may need updating).</p>
+        <p class="status-msg" style="margin-bottom:12px">⚠ Couldn't load NHK Easy News.</p>
         <p style="font-size:0.85rem;opacity:0.7">You can read NHK Easy News directly at
-        <a href="https://www3.nhk.or.jp/news/easy/" target="_blank" rel="noreferrer" style="color:var(--accent-stroke)">nhk.or.jp/news/easy ↗</a></p>
+        <a href="https://nhkeasier.com/" target="_blank" rel="noreferrer" style="color:var(--accent-stroke)">nhkeasier.com ↗</a>
+        or <a href="https://www3.nhk.or.jp/news/easy/" target="_blank" rel="noreferrer" style="color:var(--accent-stroke)">nhk.or.jp/news/easy ↗</a></p>
       </div>`;
   }
 }
 
 async function readerOpenNhkArticle(article) {
-  const workerBase = (window.TSUNDOKU_CONFIG?.jishoApi || 'https://minireader.zoe-caudron.workers.dev/?keyword=')
-    .replace('?keyword=', '');
   document.getElementById('reader-article-list').style.display = 'none';
   const contentEl = document.getElementById('reader-content');
   contentEl.style.display = 'block';
   document.getElementById('reader-article-title').textContent = article.title;
   const bodyEl = document.getElementById('reader-body');
-  bodyEl.innerHTML = '<p class="status-msg">Loading article…</p>';
-  try {
-    const r = await fetch(workerBase + '?nhk_article=' + encodeURIComponent(article.url), {
-      signal: AbortSignal.timeout(12000)
-    });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
-    bodyEl.innerHTML = data.html || '<p class="status-msg">No content found.</p>';
+
+  // Body is now pre-fetched from nhkeasier.com and included in the article object
+  if (article.body) {
+    bodyEl.innerHTML = article.body;
     readerApplyFurigana(readerFurigana);
-  } catch (e) {
-    bodyEl.innerHTML = `<p class="status-msg">Failed to load article. <a href="${escapeHtml(article.url)}" target="_blank" rel="noreferrer" style="color:var(--accent-stroke)">Open on NHK ↗</a></p>`;
+  } else {
+    // Fallback: try fetching from worker (shouldn't normally happen)
+    const workerBase = (window.TSUNDOKU_CONFIG?.jishoApi || 'https://minireader.zoe-caudron.workers.dev/?keyword=')
+      .replace('?keyword=', '');
+    bodyEl.innerHTML = '<p class="status-msg">Loading article…</p>';
+    try {
+      const r = await fetch(workerBase + '?nhk_article=' + encodeURIComponent(article.url), {
+        signal: AbortSignal.timeout(12000)
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const data = await r.json();
+      bodyEl.innerHTML = data.html || '<p class="status-msg">No content found.</p>';
+      readerApplyFurigana(readerFurigana);
+    } catch (e) {
+      const link = article.url || 'https://nhkeasier.com/';
+      bodyEl.innerHTML = `<p class="status-msg">Failed to load article. <a href="${escapeHtml(link)}" target="_blank" rel="noreferrer" style="color:var(--accent-stroke)">Open on NHK Easier ↗</a></p>`;
+    }
   }
 }
 
@@ -194,8 +205,13 @@ function readerBackToList() {
   document.getElementById('reader-article-list').style.display = '';
 }
 
+let readerLastFetch = 0;
+
 function initReader() {
-  if (readerNhkArticles !== null) return;
+  // Refetch if stale (>30 min) or never fetched
+  const stale = Date.now() - readerLastFetch > 30 * 60 * 1000;
+  if (readerNhkArticles !== null && !stale) return;
+  readerNhkArticles = null;
   readerLoadSource();
 }
 
