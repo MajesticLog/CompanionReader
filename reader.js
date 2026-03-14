@@ -70,6 +70,14 @@ const TADOKU_STORIES = {
 let readerFurigana = false;
 let readerCurrentSource = 'nhk';
 let readerNhkArticles = null;
+let readerSlowCommArticles = null;
+let readerNhkRegularArticles = null;
+let readerLastFetch = 0;
+
+function _workerBase() {
+  return (window.TSUNDOKU_CONFIG?.jishoApi || 'https://minireader.zoe-caudron.workers.dev/?keyword=')
+    .replace('?keyword=', '');
+}
 
 async function readerLoadSource() {
   const source = document.getElementById('reader-source').value;
@@ -79,16 +87,18 @@ async function readerLoadSource() {
   listEl.innerHTML = '<p class="status-msg">Loading…</p>';
   if (source === 'nhk') {
     await readerLoadNhk(listEl);
+  } else if (source === 'slowcomm') {
+    await readerLoadSlowComm(listEl);
+  } else if (source === 'nhk-regular') {
+    await readerLoadNhkRegular(listEl);
   } else {
     readerLoadTadoku(source, listEl);
   }
 }
 
 async function readerLoadNhk(listEl) {
-  const workerBase = (window.TSUNDOKU_CONFIG?.jishoApi || 'https://minireader.zoe-caudron.workers.dev/?keyword=')
-    .replace('?keyword=', '');
   try {
-    const r = await fetch(workerBase + '?nhk=1', { signal: AbortSignal.timeout(12000) });
+    const r = await fetch(_workerBase() + '?nhk=1', { signal: AbortSignal.timeout(12000) });
     if (!r.ok) throw new Error('Worker returned ' + r.status);
     const data = await r.json();
     if (!data.articles?.length) throw new Error('No articles');
@@ -122,6 +132,111 @@ async function readerLoadNhk(listEl) {
   }
 }
 
+// ── Slow Communication (N3/N2) ──────────────────────────────
+async function readerLoadSlowComm(listEl) {
+  try {
+    const r = await fetch(_workerBase() + '?slowcomm=1', { signal: AbortSignal.timeout(12000) });
+    if (!r.ok) throw new Error('Worker returned ' + r.status);
+    const data = await r.json();
+    if (!data.articles?.length) throw new Error('No articles');
+    readerSlowCommArticles = data.articles;
+    listEl.innerHTML = '';
+    for (const article of data.articles) {
+      const btn = document.createElement('button');
+      btn.className = 'reader-article-btn';
+      const imgHtml = article.img
+        ? `<img class="reader-article-thumb" src="${escapeHtml(article.img)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+        : '';
+      btn.innerHTML = `
+        ${imgHtml}
+        <span class="reader-article-info">
+          <span class="reader-article-title">${escapeHtml(article.title)}</span>
+          ${article.date ? `<span class="reader-article-date">${escapeHtml(article.date)}</span>` : ''}
+        </span>`;
+      btn.addEventListener('click', () => readerOpenSlowCommArticle(article));
+      listEl.appendChild(btn);
+    }
+  } catch (e) {
+    listEl.innerHTML = `
+      <div style="padding:16px">
+        <p class="status-msg" style="margin-bottom:12px">⚠ Couldn't load Slow Communication.</p>
+        <p style="font-size:0.85rem;opacity:0.7">You can read directly at
+        <a href="https://slow-communication.jp/news/" target="_blank" rel="noreferrer" style="color:var(--accent-stroke)">slow-communication.jp ↗</a></p>
+      </div>`;
+  }
+}
+
+async function readerOpenSlowCommArticle(article) {
+  document.getElementById('reader-article-list').style.display = 'none';
+  const contentEl = document.getElementById('reader-content');
+  contentEl.style.display = 'block';
+  document.getElementById('reader-article-title').textContent = article.title;
+  const bodyEl = document.getElementById('reader-body');
+  bodyEl.innerHTML = '<p class="status-msg">Loading article…</p>';
+  try {
+    const r = await fetch(_workerBase() + '?slowcomm_article=' + encodeURIComponent(article.url), {
+      signal: AbortSignal.timeout(12000)
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    bodyEl.innerHTML = data.html || '<p class="status-msg">No content found.</p>';
+    readerApplyFurigana(readerFurigana);
+  } catch (e) {
+    bodyEl.innerHTML = `<p class="status-msg">Failed to load article. <a href="${escapeHtml(article.url)}" target="_blank" rel="noreferrer" style="color:var(--accent-stroke)">Open on Slow Communication ↗</a></p>`;
+  }
+}
+
+// ── NHK Regular News (N1+) ──────────────────────────────────
+async function readerLoadNhkRegular(listEl) {
+  try {
+    const r = await fetch(_workerBase() + '?nhk_regular=1', { signal: AbortSignal.timeout(12000) });
+    if (!r.ok) throw new Error('Worker returned ' + r.status);
+    const data = await r.json();
+    if (!data.articles?.length) throw new Error('No articles');
+    readerNhkRegularArticles = data.articles;
+    listEl.innerHTML = '';
+    for (const article of data.articles) {
+      const btn = document.createElement('button');
+      btn.className = 'reader-article-btn';
+      btn.innerHTML = `
+        <span class="reader-article-info">
+          <span class="reader-article-title">${escapeHtml(article.title)}</span>
+          ${article.date ? `<span class="reader-article-date">${escapeHtml(article.date)}</span>` : ''}
+          ${article.desc ? `<span class="reader-article-desc">${escapeHtml(article.desc)}</span>` : ''}
+        </span>`;
+      btn.addEventListener('click', () => readerOpenNhkRegularArticle(article));
+      listEl.appendChild(btn);
+    }
+  } catch (e) {
+    listEl.innerHTML = `
+      <div style="padding:16px">
+        <p class="status-msg" style="margin-bottom:12px">⚠ Couldn't load NHK News.</p>
+        <p style="font-size:0.85rem;opacity:0.7">You can read directly at
+        <a href="https://www3.nhk.or.jp/news/" target="_blank" rel="noreferrer" style="color:var(--accent-stroke)">nhk.or.jp/news ↗</a></p>
+      </div>`;
+  }
+}
+
+async function readerOpenNhkRegularArticle(article) {
+  document.getElementById('reader-article-list').style.display = 'none';
+  const contentEl = document.getElementById('reader-content');
+  contentEl.style.display = 'block';
+  document.getElementById('reader-article-title').textContent = article.title;
+  const bodyEl = document.getElementById('reader-body');
+  bodyEl.innerHTML = '<p class="status-msg">Loading article…</p>';
+  try {
+    const r = await fetch(_workerBase() + '?nhk_regular_article=' + encodeURIComponent(article.url), {
+      signal: AbortSignal.timeout(12000)
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    bodyEl.innerHTML = data.html || '<p class="status-msg">No content found.</p>';
+    // No furigana toggle for N1+ — it's real Japanese
+  } catch (e) {
+    bodyEl.innerHTML = `<p class="status-msg">Failed to load article. <a href="${escapeHtml(article.url)}" target="_blank" rel="noreferrer" style="color:var(--accent-stroke)">Open on NHK ↗</a></p>`;
+  }
+}
+
 async function readerOpenNhkArticle(article) {
   document.getElementById('reader-article-list').style.display = 'none';
   const contentEl = document.getElementById('reader-content');
@@ -135,11 +250,9 @@ async function readerOpenNhkArticle(article) {
     readerApplyFurigana(readerFurigana);
   } else {
     // Fallback: try fetching from worker (shouldn't normally happen)
-    const workerBase = (window.TSUNDOKU_CONFIG?.jishoApi || 'https://minireader.zoe-caudron.workers.dev/?keyword=')
-      .replace('?keyword=', '');
     bodyEl.innerHTML = '<p class="status-msg">Loading article…</p>';
     try {
-      const r = await fetch(workerBase + '?nhk_article=' + encodeURIComponent(article.url), {
+      const r = await fetch(_workerBase() + '?nhk_article=' + encodeURIComponent(article.url), {
         signal: AbortSignal.timeout(12000)
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -205,13 +318,10 @@ function readerBackToList() {
   document.getElementById('reader-article-list').style.display = '';
 }
 
-let readerLastFetch = 0;
-
 function initReader() {
   // Refetch if stale (>30 min) or never fetched
   const stale = Date.now() - readerLastFetch > 30 * 60 * 1000;
-  if (readerNhkArticles !== null && !stale) return;
-  readerNhkArticles = null;
+  if (!stale && (readerNhkArticles || readerSlowCommArticles || readerNhkRegularArticles)) return;
   readerLoadSource();
 }
 
